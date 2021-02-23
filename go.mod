@@ -1,1 +1,3 @@
-module "ip-fastclient-go"
+module ip-fastclient-go
+
+go 1.14
