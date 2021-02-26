@@ -1,4 +1,4 @@
-package client
+package ip_geo_client
 
 import "ip-fastclient-go/fast/context"
 
