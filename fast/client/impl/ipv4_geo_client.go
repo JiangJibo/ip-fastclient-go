@@ -57,6 +57,11 @@ func (client *Ipv4GeoClient) Load(ctx context.FastIPGeoContext) (bool, error) {
 	contentMappings := make(map[string]string, 0)
 	contentIndexMappings := make(map[string]uint32, 0)
 
+	// 阿里云用户id
+	id := ""
+	version := ctx.MetaInfo.Version
+	metaInfo := ctx.MetaInfo
+
 	for i := 0; i < int(recordSize); i++ {
 		pos := consts.META_INFO_BYTE_LENGTH + 8 + IpFirstSegmentSize + (i * 9)
 		endIpBytes[2*i] = data[pos]
@@ -82,3 +87,5 @@ func (client *Ipv4GeoClient) Load(ctx context.FastIPGeoContext) (bool, error) {
 
 	return true, nil
 }
+
+func

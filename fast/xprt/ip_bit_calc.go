@@ -4,7 +4,7 @@ type IPBitCalc struct {
 }
 
 func ReadInt(data []byte, p int) uint32 {
-	return ReadInt(data, p)
+	return ReadVInt4(data, p)
 }
 
 func ReadVInt4(data []byte, p int) uint32 {
