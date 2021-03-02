@@ -1,18 +1,19 @@
 package clientUtils
 
 import (
-	md52 "crypto/md5"
+	"crypto/md5"
 	"encoding/hex"
-	json2 "encoding/json"
+	"encoding/json"
 	"ip-fastclient-go/fast/consts"
 	"ip-fastclient-go/fast/domain"
 	"os"
+	"strconv"
 	"strings"
 )
 
 // 对字节数组做md5加密
 func Md5Hex(bytes []byte) (string, error) {
-	md5 := md52.New()
+	md5 := md5.New()
 	_, error := md5.Write(bytes)
 	if error != nil {
 		return "", error
@@ -46,7 +47,7 @@ func RawToJson(version string, id string, rawContent string, storedProperties []
 			makeGeo(version, id, jsonObject)
 		}
 	}
-	json, _ := json2.Marshal(jsonObject)
+	json, _ := json.Marshal(jsonObject)
 	return string(json)
 }
 
@@ -54,8 +55,73 @@ func RawToJson(version string, id string, rawContent string, storedProperties []
 func makeGeo(version string, id string, jsonObject map[string]string) {
 	latitude, ok := jsonObject[consts.GEO_X]
 	longitude, _ := jsonObject[consts.GEO_Y]
+
+	//水印位置,需要对ip经纬度做替换
+	//129.618605_1
 	if !ok || !strings.Contains(latitude, "_") || latitude == "" || longitude == "" {
 		return
 	}
-	splits := strings.SplitAfterN(longitude, "_", 2)
+	splits := strings.SplitAfterN(latitude, "_", 2)
+	realLatitude := formatString(splits[0])
+	realLongitude := formatString(longitude)
+
+	//水印ip固定为10个吧，不然太复杂
+	//20200505 把version前面补0，10位
+	versions := splitInFixedLength(version, 1)
+
+	versions = append(versions, "0", "0")
+	marks := splitInFixedLength(id, 2)
+
+	order, _ := strconv.Atoi(splits[1])
+
+	postfix := versions[order] + marks[order]
+	finalLatitude := realLatitude[:len(realLatitude)-3] + postfix
+	finalLongitude := realLongitude[:len(realLongitude)-3] + postfix
+	jsonObject[consts.GEO_X] = finalLatitude
+	jsonObject[consts.GEO_Y] = finalLongitude
+
+}
+
+// 将经纬度点后的6位替换成7位
+func formatString(str string) string {
+	if !strings.Contains(str, ".") {
+		return str
+	}
+	splits := strings.SplitAfterN(str, ".", 2)
+	suffix := splits[1]
+	// . 后是7位
+	if len(suffix) == 7 {
+		return str
+	} else
+	// .后小于7位
+	if len(suffix) < 7 {
+		for i := 0; i < 7-len(suffix); i++ {
+			str = str + "0"
+		}
+		return str
+	} else {
+		//.后大于7位
+		suffix = suffix[0:7]
+		return splits[0] + "." + suffix
+	}
+}
+
+// 将字符串拆分成固定段
+func splitInFixedLength(text string, length int) []string {
+	splits := make([]string, 0)
+	x := 0
+	var s string
+	for i := 0; i < len(text); i++ {
+		x++
+		s = s + text[i:i+1]
+		if x == length {
+			splits = append(splits, s)
+			s = ""
+			x = 0
+		}
+		if i == len(text)-1 && len(s) > 0 {
+			splits = append(splits, s)
+		}
+	}
+	return splits
 }
