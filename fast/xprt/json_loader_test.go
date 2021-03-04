@@ -50,3 +50,9 @@ func TestRawToJson(t *testing.T) {
 	json := RawToJson("20200505", "12345678901234567890", rawContent, storedProperties, loadProperties)
 	t.Log(json)
 }
+
+func TestIntToUint32(t *testing.T) {
+	v := 2 << 30
+	t.Log(v)
+	t.Log(uint32(v))
+}
