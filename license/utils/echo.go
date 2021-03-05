@@ -8,8 +8,7 @@ import (
 )
 
 func echo(x string) string {
-	timestamp := time.Now().Unix()
-
+	return ""
 }
 
 func decox(x string) bool {
