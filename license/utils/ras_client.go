@@ -1,52 +1,31 @@
 package license_utils
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/pem"
-	"os"
+	"encoding/base64"
+	gorsa "ip-fastclient-go/license/rsa"
 )
 
-//RSA公钥私钥产生
-func GenRsaKey(bits int) error {
+// 使用公钥解密
+func DecryptByPublicKey(publicKey string, cipherBytes []byte) ([]byte, error) {
+	pk, err := getPublicKey(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	grsa := gorsa.RSASecurity{}
+	grsa.SetPubKey(pk)
+	return grsa.PubKeyDECRYPT(cipherBytes)
+}
 
-	rsa.DecryptPKCS1v15()
-	// 生成私钥文件
-	privateKey, err := rsa.GenerateKey(rand.Reader, bits)
+func getPublicKey(publicKey string) (*rsa.PublicKey, error) {
+	keyBytes, err := base64.StdEncoding.DecodeString(publicKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	derStream := x509.MarshalPKCS1PrivateKey(privateKey)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: derStream,
-	}
-	file, err := os.Create("private.pem")
+	pub, err := x509.ParsePKIXPublicKey(keyBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = pem.Encode(file, block)
-	if err != nil {
-		return err
-	}
-	// 生成公钥文件
-	publicKey := &privateKey.PublicKey
-	derPkix, err := x509.MarshalPKIXPublicKey(publicKey)
-	if err != nil {
-		return err
-	}
-	block = &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: derPkix,
-	}
-	file, err = os.Create("public.pem")
-	if err != nil {
-		return err
-	}
-	err = pem.Encode(file, block)
-	if err != nil {
-		return err
-	}
-	return nil
+	return pub.(*rsa.PublicKey), err
 }
