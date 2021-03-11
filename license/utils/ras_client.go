@@ -1,4 +1,4 @@
-package license_utils
+package LicenseUtils
 
 import (
 	"crypto/rsa"

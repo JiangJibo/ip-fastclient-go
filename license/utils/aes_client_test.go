@@ -1,7 +1,8 @@
-package license_utils
+package LicenseUtils
 
 import (
 	"encoding/hex"
+	"ip-fastclient-go/license/enums"
 	"testing"
 )
 
@@ -28,4 +29,10 @@ func TestAesDecryptECB(t *testing.T) {
 	key := []byte("oT4NexVBTGSrcACk")
 	ret := AesDecryptECB(origData, key)
 	t.Log(string(ret))
+}
+
+func TestDataType(t *testing.T) {
+	t.Log(enums.IPV4)
+	x := enums.IPV4 + 1
+	t.Log(x)
 }

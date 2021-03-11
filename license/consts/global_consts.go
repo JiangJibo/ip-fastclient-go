@@ -1,4 +1,4 @@
-package consts
+package LicenseConsts
 
 var (
 	//不限制qps的qps值为-1
@@ -20,7 +20,7 @@ var (
 	MgAesPasswordSize = 16
 
 	//系统时间和license颁发时间最多相差的时间是2天
-	MaxDeltaSeconds = 2 * 24 * 3600
+	MaxDeltaSeconds int64 = 2 * 24 * 3600
 
 	// 混淆的chunk个数
 	MaxChaosParts = 11
@@ -29,5 +29,5 @@ var (
 	MagicNum = 12
 
 	// 到期30天前开始提醒
-	MaxNotifyBeforeSeconds = 30 * 24 * 3600
+	MaxNotifyBeforeSeconds int64 = 30 * 24 * 3600
 )
