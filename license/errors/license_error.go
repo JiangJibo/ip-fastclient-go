@@ -52,6 +52,12 @@ var (
 	}
 
 	//证书异常
+	LicenseFileNotExists = LicenseError{
+		msg:  "证书不存在",
+		code: 501,
+	}
+
+	//证书异常
 	LicenseInvalid = LicenseError{
 		msg:  "证书异常",
 		code: 501,

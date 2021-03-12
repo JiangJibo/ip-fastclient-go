@@ -7,8 +7,8 @@ import (
 )
 
 type LicenseSecret struct {
-	License
-	CipherEntity CipherEntity
+	*License
+	CipherEntity *CipherEntity
 }
 
 func (ls *LicenseSecret) GetId() (string, LicenseErrors.LicenseError) {
