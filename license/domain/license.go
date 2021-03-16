@@ -1,4 +1,4 @@
-package LicenseDomain
+package domain
 
 type License struct {
 	Sign      string

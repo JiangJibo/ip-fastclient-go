@@ -21,7 +21,7 @@ type Ipv4GeoClient struct {
 	licenseClient  lsnClient.LicenseClient
 }
 
-func (client *Ipv4GeoClient) Load(ctx context.FastIPGeoContext) (bool, error) {
+func (client *Ipv4GeoClient) Load(ctx IpGeoClientContext.FastIPGeoContext) (bool, error) {
 	geoConf := ctx.GeoConf
 	data := ctx.Data
 
@@ -32,19 +32,19 @@ func (client *Ipv4GeoClient) Load(ctx context.FastIPGeoContext) (bool, error) {
 	client.ipBlockEnd = ipBlockEnd
 
 	for i := 0; i < IpFirstSegmentSize; i++ {
-		k := consts.META_INFO_BYTE_LENGTH + 8 + (i * 8)
-		ipBlockStart[i] = clientUtils.ReadInt(data, k)
-		ipBlockEnd[i] = clientUtils.ReadInt(data, k+4)
+		k := consts.MetaInfoByteLength + 8 + (i * 8)
+		ipBlockStart[i] = xprt.ReadInt(data, k)
+		ipBlockEnd[i] = xprt.ReadInt(data, k+4)
 	}
 	// 前4字节存储ip条数
-	recordSize := clientUtils.ReadInt(data, consts.META_INFO_BYTE_LENGTH)
+	recordSize := xprt.ReadInt(data, consts.MetaInfoByteLength)
 
 	endIpBytes := make([]byte, recordSize<<1)
 	client.endIpBytes = endIpBytes
 	contentIndexes := make([]byte, recordSize<<3)
 	client.contentIndexes = contentIndexes
 	// 有多少条唯一性的内容
-	contentArray := make([]string, clientUtils.ReadInt(data, consts.META_INFO_BYTE_LENGTH+4))
+	contentArray := make([]string, xprt.ReadInt(data, consts.MetaInfoByteLength+4))
 	client.contentArray = contentArray
 	// int形式的内容位置
 	contentIndex := make([]int, recordSize)
@@ -60,23 +60,23 @@ func (client *Ipv4GeoClient) Load(ctx context.FastIPGeoContext) (bool, error) {
 	metaInfo := ctx.MetaInfo
 
 	for i := 0; i < int(recordSize); i++ {
-		pos := consts.META_INFO_BYTE_LENGTH + 8 + IpFirstSegmentSize + (i * 9)
+		pos := consts.MetaInfoByteLength + 8 + IpFirstSegmentSize + (i * 9)
 		endIpBytes[2*i] = data[pos]
 		endIpBytes[2*i+1] = data[pos+1]
-		offset := clientUtils.ReadInt(data, pos+2)
-		length := clientUtils.ReadInt(data, pos+6)
+		offset := xprt.ReadInt(data, pos+2)
+		length := xprt.ReadInt(data, pos+6)
 		if offset == 0 && length == 0 {
 			continue
 		}
 
 		// 将所有字符串都取出来, 每个字符串都缓存好
-		rawContent := string(clientUtils.CopyOfRange(data, int(offset), int(offset+length)))
+		rawContent := string(xprt.CopyOfRange(data, int(offset), int(offset+length)))
 		// 对原始内容做处理, 不重复处理
 		var content string
 		if v, ok := contentMappings[rawContent]; ok {
 			content = v
 		} else {
-			content = clientUtils.RawToJson(version, id, rawContent, metaInfo.StoredProperties, geoConf.Properties)
+			content = xprt.RawToJson(version, id, rawContent, metaInfo.StoredProperties, geoConf.Properties)
 			contentMappings[rawContent] = content
 		}
 
@@ -95,7 +95,7 @@ func (client *Ipv4GeoClient) Load(ctx context.FastIPGeoContext) (bool, error) {
 
 		// 将内容位置的int数组转换成字节数组,节省一个字节
 		for i := 0; i < len(contentIndex); i++ {
-			clientUtils.WriteVInt3(contentIndexes, 3*i, contentIndex[i])
+			xprt.WriteVInt3(contentIndexes, 3*i, contentIndex[i])
 		}
 
 	}
@@ -124,7 +124,7 @@ func (client *Ipv4GeoClient) Search(ip string) (string, error) {
 	} else {
 		cur = client.binarySearch(int(start), int(end), suffix)
 	}
-	return client.contentArray[clientUtils.ReadVInt3(client.contentIndexes, (cur<<1)+cur)], nil
+	return client.contentArray[xprt.ReadVInt3(client.contentIndexes, (cur<<1)+cur)], nil
 }
 
 //计算IP段的int值

@@ -1,4 +1,4 @@
-package LicenseDomain
+package domain
 
 import (
 	"crypto/md5"
@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"ip-fastclient-go/license/consts"
-	LicenseErrors "ip-fastclient-go/license/errors"
+	LicenseErrors "ip-fastclient-go/license/error"
 	"log"
 	"math"
 	"strconv"
@@ -52,7 +52,7 @@ func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
 
 	//不允许系统时间小于申请时间超过${MAX_DELTA_SECONDS}秒
 	deltaSeconds := (time.Microsecond.Milliseconds() - entity.ApplyAt) / 1000
-	if deltaSeconds < -LicenseConsts.MaxDeltaSeconds {
+	if deltaSeconds < -consts.MaxDeltaSeconds {
 		return "", LicenseErrors.SystemTimeErr
 	}
 
@@ -60,7 +60,7 @@ func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
 	diffExpireSeconds := (entity.ExpireAt - nowMillis) / 1000
 	diffDelaySeconds := (entity.DelayAt - nowMillis) / 1000
 
-	if diffExpireSeconds <= LicenseConsts.MaxNotifyBeforeSeconds && diffDelaySeconds >= 0 {
+	if diffExpireSeconds <= consts.MaxNotifyBeforeSeconds && diffDelaySeconds >= 0 {
 		log.Printf("[fastip2geo] | 您的服务使用到期时间为 %s，请尽快续费并更新授权文件，以免服务暂停使用影响业务运转", fmt.Sprint(time.Unix(entity.ExpireAt, 0)))
 	}
 
@@ -80,7 +80,7 @@ func (entity *CipherEntity) MakeCipherJson() (string, error) {
 }
 
 func ReturnPartSize(part int, totalSize int) int {
-	return part ^ (part + LicenseConsts.MagicNum)
+	return part ^ (part + consts.MagicNum)
 }
 
 func (c *CipherEntity) ReturnChaosParts() (int64, error) {
@@ -98,7 +98,7 @@ func (c *CipherEntity) ReturnChaosParts() (int64, error) {
 		return 0, err
 	}
 	x := c.ExpireAt ^ c.ApplyAt + int64(math.Abs(float64(limit^index)))
-	return x % int64(LicenseConsts.MaxChaosParts), nil
+	return x % int64(consts.MaxChaosParts), nil
 }
 
 func (c *CipherEntity) CalCipherSign() (string, error) {

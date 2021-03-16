@@ -3,11 +3,8 @@ package domain
 import (
 	"io"
 	"io/ioutil"
+	"ip-fastclient-go/fast/xprt"
 	"os"
-)
-
-var (
-	IpSdkFilterEmptyPropertyConfKey = "ip.sdk.filter.empty.property"
 )
 
 type FastGeoConf struct {
@@ -20,34 +17,34 @@ type FastGeoConf struct {
 	DataFilePath string
 	DataBytes    []byte
 	DataInput    io.Reader
+
+	BlockedIfRateLimited bool
 }
 
 func (fastGeoConf *FastGeoConf) FilterEmptyValue() {
-	os.Setenv(IpSdkFilterEmptyPropertyConfKey, "true")
+	os.Setenv(xprt.IpSdkFilterEmptyPropertyConfKey, "true")
 }
 
 // 读取Reader
-func ReadInput(reader io.Reader) ([]byte, error) {
+func ReadInput(reader io.Reader) []byte {
 	if reader == nil {
-		return nil, nil
+		return nil
 	}
-	data, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	data, _ := ioutil.ReadAll(reader)
+	return data
 }
 
 // 获取许可数据
-func (fastGeoConf *FastGeoConf) GetLicenseData() ([]byte, error) {
+func (fastGeoConf *FastGeoConf) GetLicenseData() []byte {
 	if fastGeoConf.LicenseInput != nil {
 		fastGeoConf.initLicense()
-		return fastGeoConf.LicenseBytes, nil
+		return fastGeoConf.LicenseBytes
 	}
 	if fastGeoConf.LicenseBytes != nil {
-		return fastGeoConf.LicenseBytes, nil
+		return fastGeoConf.LicenseBytes
 	}
-	return ioutil.ReadFile(fastGeoConf.LicenseFilePath)
+	bts, _ := ioutil.ReadFile(fastGeoConf.LicenseFilePath)
+	return bts
 }
 
 // 初始化许可数据
@@ -55,10 +52,7 @@ func (fastGeoConf *FastGeoConf) initLicense() error {
 	if fastGeoConf.LicenseInput == nil {
 		return nil
 	}
-	licenseBytes, err := ReadInput(fastGeoConf.LicenseInput)
-	if err != nil {
-		return err
-	}
+	licenseBytes := ReadInput(fastGeoConf.LicenseInput)
 	if licenseBytes != nil || len(licenseBytes) > 0 {
 		fastGeoConf.LicenseBytes = licenseBytes
 		fastGeoConf.LicenseInput = nil
@@ -67,15 +61,16 @@ func (fastGeoConf *FastGeoConf) initLicense() error {
 }
 
 // 获取数据
-func (fastGeoConf *FastGeoConf) GetDexData() ([]byte, error) {
+func (fastGeoConf *FastGeoConf) GetDexData() []byte {
 	if fastGeoConf.DataInput != nil {
 		fastGeoConf.initDex()
-		return fastGeoConf.DataBytes, nil
+		return fastGeoConf.DataBytes
 	}
 	if fastGeoConf.DataBytes != nil {
-		return fastGeoConf.DataBytes, nil
+		return fastGeoConf.DataBytes
 	}
-	return ioutil.ReadFile(fastGeoConf.DataFilePath)
+	bts, _ := ioutil.ReadFile(fastGeoConf.DataFilePath)
+	return bts
 }
 
 // 初始化数据
@@ -83,15 +78,22 @@ func (fastGeoConf *FastGeoConf) initDex() error {
 	if fastGeoConf.DataInput == nil {
 		return nil
 	}
-	dataBytes, err := ReadInput(fastGeoConf.DataInput)
-	if err != nil {
-		return err
-	}
+	dataBytes := ReadInput(fastGeoConf.DataInput)
 	if dataBytes != nil || len(dataBytes) > 0 {
 		fastGeoConf.DataBytes = dataBytes
 		fastGeoConf.DataInput = nil
 	}
 	return nil
+}
+
+func (fastGeoConf *FastGeoConf) CalculateLicenseKey() string {
+	if fastGeoConf.LicenseInput != nil {
+		return xprt.Md5Hex(ReadInput(fastGeoConf.LicenseInput))
+	}
+	if fastGeoConf.LicenseBytes != nil {
+		return xprt.Md5Hex(fastGeoConf.LicenseBytes)
+	}
+	return fastGeoConf.LicenseFilePath
 }
 
 // 释放资源

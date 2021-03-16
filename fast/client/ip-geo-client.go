@@ -1,6 +1,6 @@
-package ip_geo_client
+package client
 
-import "ip-fastclient-go/fast/context"
+import FastClientContext "ip-fastclient-go/fast/context"
 
 type IpGeoClient interface {
 
@@ -8,5 +8,5 @@ type IpGeoClient interface {
 	Search(ip string) (string, error)
 
 	// 加载
-	Load(ctx context.FastIPGeoContext) (bool, error)
+	Load(ctx FastClientContext.FastIPGeoContext) (bool, error)
 }

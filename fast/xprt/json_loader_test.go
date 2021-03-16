@@ -1,4 +1,4 @@
-package clientUtils
+package xprt
 
 import (
 	"ip-fastclient-go/fast/consts"
@@ -6,10 +6,7 @@ import (
 )
 
 func TestMd5Hex(t *testing.T) {
-	ret, err := Md5Hex([]byte{1, 2, 3})
-	if err != nil {
-		t.Error(err)
-	}
+	ret := Md5Hex([]byte{1, 2, 3})
 	t.Log(ret)
 }
 
@@ -20,8 +17,8 @@ func TestSplitInFixedLength(t *testing.T) {
 
 func TestMakeGeo(t *testing.T) {
 	jsonObject := make(map[string]string, 0)
-	jsonObject[consts.GEO_X] = "128.1112223_1"
-	jsonObject[consts.GEO_Y] = "12.223432"
+	jsonObject[consts.GeoX] = "128.1112223_1"
+	jsonObject[consts.GeoY] = "12.223432"
 	makeGeo("20200505", "12345678901234567890", jsonObject)
 	t.Log(jsonObject)
 }

@@ -1,1 +1,1 @@
-package LicenseUtils
+package utils

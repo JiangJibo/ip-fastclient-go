@@ -1,8 +1,8 @@
-package LicenseDomain
+package domain
 
 import (
 	"errors"
-	LicenseErrors "ip-fastclient-go/license/errors"
+	LicenseErrors "ip-fastclient-go/license/error"
 	LicenseUtils "ip-fastclient-go/license/utils"
 )
 

@@ -1,7 +1,7 @@
-package LicenseDomain
+package domain
 
 import (
-	"ip-fastclient-go/license/errors"
+	"ip-fastclient-go/license/error"
 	"testing"
 )
 
@@ -22,8 +22,8 @@ func TestReturnNilStruct(t *testing.T) {
 	t.Log(err)
 }
 
-func returnNilStruct() LicenseErrors.LicenseError {
-	return LicenseErrors.LicenseError{}
+func returnNilStruct() errors.LicenseError {
+	return errors.LicenseError{}
 }
 
 func TestCalCipherSign(t *testing.T) {

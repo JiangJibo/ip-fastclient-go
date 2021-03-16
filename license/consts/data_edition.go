@@ -1,4 +1,4 @@
-package LicenseConsts
+package consts
 
 type code int
 

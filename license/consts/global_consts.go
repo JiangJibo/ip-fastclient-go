@@ -1,4 +1,4 @@
-package LicenseConsts
+package consts
 
 var (
 	//不限制qps的qps值为-1

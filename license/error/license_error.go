@@ -1,12 +1,12 @@
-package LicenseErrors
+package error
 
-type LicenseErrorInterface interface {
+type IpGeoErrorInterface interface {
 	error
 	Code() int
 }
 
 type LicenseError struct {
-	LicenseErrorInterface
+	IpGeoErrorInterface
 	msg  string
 	code int
 }

@@ -1,4 +1,4 @@
-package clientUtils
+package xprt
 
 type IPBitCalc struct {
 }
@@ -18,7 +18,7 @@ func ReadVInt4(data []byte, p int) uint32 {
 func ReadVInt3(data []byte, p int) uint32 {
 	x := uint32(data[p]) << 16 & 0xFF0000
 	p++
-	y := uint32(data[p]<<8) & 0xFF00
+	y := uint32(data[p]) << 8 & 0xFF00
 	p++
 	z := uint32(data[p]) & 0xFF
 	return x | y | z
@@ -34,9 +34,9 @@ func WriteVInt3(data []byte, offset int, i int) {
 }
 
 func CopyOfRange(data []byte, from int, to int) []byte {
-	ret := make([]byte, to-from+1)
+	ret := make([]byte, to-from)
 	for i := from; i < to; i++ {
-		ret[i] = data[i]
+		ret[i-from] = data[i]
 	}
 	return ret
 }

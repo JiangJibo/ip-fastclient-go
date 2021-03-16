@@ -1,10 +1,10 @@
-package LicenseUtils
+package utils
 
 import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
-	gorsa "ip-fastclient-go/license/rsa"
+	gorsa "ip-fastclient-go/license/gorsa"
 )
 
 // 使用公钥解密

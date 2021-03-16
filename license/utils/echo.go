@@ -1,4 +1,4 @@
-package LicenseUtils
+package utils
 
 import (
 	"bytes"

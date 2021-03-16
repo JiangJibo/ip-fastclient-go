@@ -1,49 +1,49 @@
-package clientUtils
+package xprt
 
 import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"ip-fastclient-go/fast/consts"
-	"ip-fastclient-go/fast/domain"
 	"os"
 	"strconv"
 	"strings"
 )
 
+var (
+	IpSdkFilterEmptyPropertyConfKey = "ip.sdk.filter.empty.property"
+)
+
 // 对字节数组做md5加密
-func Md5Hex(bytes []byte) (string, error) {
+func Md5Hex(bytes []byte) string {
 	md5 := md5.New()
-	_, error := md5.Write(bytes)
-	if error != nil {
-		return "", error
-	}
-	return hex.EncodeToString(md5.Sum(nil)), nil
+	md5.Write(bytes)
+	return hex.EncodeToString(md5.Sum(nil))
 }
 
 // 原始string数据转换成json
 func RawToJson(version string, id string, rawContent string, storedProperties []string, loadProperties map[string]bool) string {
-	splits := strings.Split(rawContent, consts.GEO_RAW_SEP)
+	splits := strings.Split(rawContent, consts.GeoRawSep)
 	jsonObject := make(map[string]string, 10)
-	property := os.Getenv(domain.IpSdkFilterEmptyPropertyConfKey)
+	property := os.Getenv(IpSdkFilterEmptyPropertyConfKey)
 
 	for i := 0; i < len(storedProperties); i++ {
-		var value = consts.NOTFOUND_GEO_ITEM_VALUE
+		var value = consts.NotfoundGeoItemValue
 		if i < len(splits) {
 			trimValue := strings.Trim(splits[i], " ")
 			if len(trimValue) > 0 {
 				value = trimValue
 			}
 		}
-		if "true" == property && value == consts.NOTFOUND_GEO_ITEM_VALUE {
+		if "true" == property && value == consts.NotfoundGeoItemValue {
 			continue
 		}
 		if _, ok := loadProperties[storedProperties[i]]; ok {
 			jsonObject[storedProperties[i]] = value
 		}
 	}
-	_, okx := loadProperties[consts.GEO_X]
-	_, oky := loadProperties[consts.GEO_Y]
+	_, okx := loadProperties[consts.GeoX]
+	_, oky := loadProperties[consts.GeoY]
 	if okx && oky {
 		makeGeo(version, id, jsonObject)
 	}
@@ -53,8 +53,8 @@ func RawToJson(version string, id string, rawContent string, storedProperties []
 
 //思路： 把用户的uid（20位）分成10个chunk，每个chunk 为2个char的数字 对于水印ip的位置信息，归一化经纬度为6位小数
 func makeGeo(version string, id string, jsonObject map[string]string) {
-	latitude, ok := jsonObject[consts.GEO_Y]
-	longitude, _ := jsonObject[consts.GEO_X]
+	latitude, ok := jsonObject[consts.GeoY]
+	longitude, _ := jsonObject[consts.GeoX]
 
 	//水印位置,需要对ip经纬度做替换
 	//129.618605_1
@@ -77,8 +77,8 @@ func makeGeo(version string, id string, jsonObject map[string]string) {
 	postfix := versions[order] + marks[order]
 	finalLatitude := realLatitude[:len(realLatitude)-3] + postfix
 	finalLongitude := realLongitude[:len(realLongitude)-3] + postfix
-	jsonObject[consts.GEO_X] = finalLatitude
-	jsonObject[consts.GEO_Y] = finalLongitude
+	jsonObject[consts.GeoX] = finalLatitude
+	jsonObject[consts.GeoY] = finalLongitude
 }
 
 // 将经纬度点后的6位替换成7位

@@ -1,4 +1,4 @@
-package license_client
+package client
 
 import (
 	"context"
@@ -9,11 +9,17 @@ import (
 	"io/ioutil"
 	LicenseConsts "ip-fastclient-go/license/consts"
 	LicenseDomain "ip-fastclient-go/license/domain"
-	LicenseErrors "ip-fastclient-go/license/errors"
+	LicenseErrors "ip-fastclient-go/license/error"
 	LicenseUtils "ip-fastclient-go/license/utils"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
+)
+
+var (
+	mutex            = new(sync.Mutex)
+	licenseClientMap = make(map[string]*LicenseClient, 2)
 )
 
 type LicenseClient struct {
@@ -32,6 +38,32 @@ type LicenseClient struct {
 
 	//原子计数，用来判断证书是否过期或者使用qps是否超过售卖限制
 	checker atomic.Value
+}
+
+//单例返回licenseClient, 考虑到用户可能同时使用ipv4/ipv6, 或者多个v4/v6, 以为license路径作为单例主键
+func GetInstance(licenseKey string, licenseData []byte) *LicenseClient {
+	return getInstance(licenseKey, licenseData)
+}
+
+//单例返回licenseClient, 考虑到用户可能同时使用ipv4/ipv6, 或者多个v4/v6, 以为license路径作为单例主键
+func GetInstanceByLicensePath(licenseFilePath string) *LicenseClient {
+	return getInstance(licenseFilePath, nil)
+}
+
+func getInstance(licenseKey string, licenseData []byte) *LicenseClient {
+	if _, ok := licenseClientMap[licenseKey]; !ok {
+		mutex.Lock()
+		if _, ok := licenseClientMap[licenseKey]; !ok {
+			licenseClient := LicenseClient{
+				LicenseData:     licenseData,
+				LicenseFilePath: licenseKey,
+			}
+			licenseClient.Init()
+			licenseClientMap[licenseKey] = &licenseClient
+		}
+		mutex.Unlock()
+	}
+	return licenseClientMap[licenseKey]
 }
 
 func (lc *LicenseClient) Init() LicenseErrors.LicenseError {
@@ -186,7 +218,7 @@ func (lc *LicenseClient) decryptLicense() (*LicenseDomain.LicenseSecret, error) 
 	}
 	return &LicenseDomain.LicenseSecret{
 		License:      &ls,
-		CipherEntity: nil,
+		CipherEntity: &cipherEntity,
 	}, nil
 }
 
