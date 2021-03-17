@@ -8,5 +8,5 @@ type IpGeoClient interface {
 	Search(ip string) (string, error)
 
 	// 加载
-	Load(ctx *FastClientContext.FastIPGeoContext) (bool, error)
+	Load(ctx *FastClientContext.FastIPGeoContext) bool
 }

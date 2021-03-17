@@ -1,4 +1,4 @@
-package ip_geo_client
+package impl
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ type Ipv4GeoClient struct {
 	blockedIfRateLimited bool
 }
 
-func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) (bool, error) {
+func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 	client.licenseClient = ctx.LicenseClient
 	client.blockedIfRateLimited = ctx.GeoConf.BlockedIfRateLimited
 	geoConf := ctx.GeoConf
@@ -102,7 +102,7 @@ func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) (bool, error) {
 	for i := 0; i < len(contentIndex); i++ {
 		xprt.WriteVInt3(contentIndexes, 3*i, contentIndex[i])
 	}
-	return true, nil
+	return true
 }
 
 func (client *Ipv4GeoClient) Search(ip string) (string, error) {

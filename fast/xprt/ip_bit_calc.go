@@ -40,3 +40,11 @@ func CopyOfRange(data []byte, from int, to int) []byte {
 	}
 	return ret
 }
+
+func ArrayCopy(data []byte, from int, dest []byte, destPos int, length int) {
+	j := 0
+	for i := from; i < from+length; i++ {
+		dest[destPos+j] = data[i]
+		j++
+	}
+}
