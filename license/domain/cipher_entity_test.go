@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"ip-fastclient-go/license/error"
 	"testing"
 )
 
@@ -17,20 +16,11 @@ var (
 	}
 )
 
-func TestReturnNilStruct(t *testing.T) {
-	err := returnNilStruct()
-	t.Log(err)
-}
-
-func returnNilStruct() errors.LicenseError {
-	return errors.LicenseError{}
-}
-
 func TestCalCipherSign(t *testing.T) {
 
-	json, _ := entity.MakeCipherJson()
+	json := entity.MakeCipherJson()
 	t.Log(json)
-	string, _ := entity.CalCipherSign()
+	string := entity.CalCipherSign()
 	t.Log(string)
 }
 

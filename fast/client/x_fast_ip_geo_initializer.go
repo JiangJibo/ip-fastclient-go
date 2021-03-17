@@ -15,10 +15,7 @@ import (
 // 初始化
 func Init(geoConf *domain.FastGeoConf) (*context.FastIPGeoContext, error) {
 	licenseClient := client.GetInstance(geoConf.CalculateLicenseKey(), geoConf.GetLicenseData())
-	word, err := licenseClient.XTry()
-	if err != nil {
-		return nil, err
-	}
+	word := licenseClient.XTry()
 	if !utils.Decox(word) {
 		return &context.FastIPGeoContext{}, errors.New(error2.LicenseInvalid.Error())
 	}
@@ -39,10 +36,7 @@ func Init(geoConf *domain.FastGeoConf) (*context.FastIPGeoContext, error) {
 	storedProperties := jsonObject["storedProperties"].([]interface{})
 	datDataType := jsonObject["dataType"].(string)
 
-	dataType, err := licenseClient.GetDataType()
-	if err != nil {
-		return nil, err
-	}
+	dataType := licenseClient.GetDataType()
 	if datDataType != dataType {
 		return nil, errors.New(fasterror.NotMatch.Error())
 	}

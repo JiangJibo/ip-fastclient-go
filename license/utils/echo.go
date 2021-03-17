@@ -13,7 +13,7 @@ import (
 )
 
 func Echo(x string) string {
-	timestamp := time.Microsecond.Milliseconds()
+	timestamp := time.Now().UnixNano() / 1e6
 	plainText := fmt.Sprintf("%d%s%s", timestamp, LicenseConsts.MgLsnEchoSep, CreateRandomNumber(32))
 	raw := []byte(LicenseConsts.MgLsnEchoKey)
 	encrypted := AesEncryptECB([]byte(plainText), raw)
@@ -23,7 +23,7 @@ func Echo(x string) string {
 func Decox(x string) bool {
 	plainText := AesDecryptECB(x, []byte(LicenseConsts.MgLsnEchoKey))
 	parts := strings.SplitN(string(plainText), LicenseConsts.MgLsnEchoSep, 2)
-	timestamp := time.Microsecond.Milliseconds()
+	timestamp := time.Now().UnixNano() / 1e6
 	decodedTimestamp, _ := strconv.Atoi(parts[0])
 	return timestamp-int64(decodedTimestamp) <= 90
 }

@@ -1,10 +1,12 @@
 package ip_geo_client
 
 import (
+	"errors"
 	"ip-fastclient-go/fast/consts"
 	"ip-fastclient-go/fast/context"
 	"ip-fastclient-go/fast/xprt"
 	lsnClient "ip-fastclient-go/license/client"
+	error2 "ip-fastclient-go/license/error"
 	"strings"
 )
 
@@ -13,15 +15,18 @@ var (
 )
 
 type Ipv4GeoClient struct {
-	ipBlockStart   []uint32
-	ipBlockEnd     []uint32
-	endIpBytes     []byte
-	contentIndexes []byte
-	contentArray   []string
-	licenseClient  lsnClient.LicenseClient
+	ipBlockStart         []uint32
+	ipBlockEnd           []uint32
+	endIpBytes           []byte
+	contentIndexes       []byte
+	contentArray         []string
+	licenseClient        *lsnClient.LicenseClient
+	blockedIfRateLimited bool
 }
 
-func (client *Ipv4GeoClient) Load(ctx IpGeoClientContext.FastIPGeoContext) (bool, error) {
+func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) (bool, error) {
+	client.licenseClient = ctx.LicenseClient
+	client.blockedIfRateLimited = ctx.GeoConf.BlockedIfRateLimited
 	geoConf := ctx.GeoConf
 	data := ctx.Data
 
@@ -55,16 +60,16 @@ func (client *Ipv4GeoClient) Load(ctx IpGeoClientContext.FastIPGeoContext) (bool
 	contentIndexMappings := make(map[string]int, 0)
 
 	// 阿里云用户id
-	id := ""
+	id := ctx.LicenseClient.GetId()
 	version := ctx.MetaInfo.Version
 	metaInfo := ctx.MetaInfo
 
 	for i := 0; i < int(recordSize); i++ {
-		pos := consts.MetaInfoByteLength + 8 + IpFirstSegmentSize + (i * 9)
+		pos := consts.MetaInfoByteLength + 8 + IpFirstSegmentSize*8 + (i * 9)
 		endIpBytes[2*i] = data[pos]
 		endIpBytes[2*i+1] = data[pos+1]
 		offset := xprt.ReadInt(data, pos+2)
-		length := xprt.ReadInt(data, pos+6)
+		length := xprt.ReadVInt3(data, pos+6)
 		if offset == 0 && length == 0 {
 			continue
 		}
@@ -92,18 +97,27 @@ func (client *Ipv4GeoClient) Load(ctx IpGeoClientContext.FastIPGeoContext) (bool
 			contentIndex[i] = index
 			index++
 		}
-
-		// 将内容位置的int数组转换成字节数组,节省一个字节
-		for i := 0; i < len(contentIndex); i++ {
-			xprt.WriteVInt3(contentIndexes, 3*i, contentIndex[i])
-		}
-
+	}
+	// 将内容位置的int数组转换成字节数组,节省一个字节
+	for i := 0; i < len(contentIndex); i++ {
+		xprt.WriteVInt3(contentIndexes, 3*i, contentIndex[i])
 	}
 	return true, nil
 }
 
 func (client *Ipv4GeoClient) Search(ip string) (string, error) {
 	// TODO 限流， 这一步不能抽离出来，用来做代码加固
+	if client.blockedIfRateLimited {
+		client.licenseClient.Acquire()
+	} else {
+		b, err := client.licenseClient.TryAcquire()
+		if err != error2.SUCCESS {
+			return "", errors.New(err.Error())
+		}
+		if !b {
+			return "", errors.New("be rate limited")
+		}
+	}
 
 	// 计算ip前缀的int值
 	firstDotIndex := strings.Index(ip, ".")
@@ -177,7 +191,7 @@ func (client *Ipv4GeoClient) binarySearch(low int, high int, suffix int) int {
 	mid := 0
 	for {
 		if low > high {
-			return high
+			break
 		}
 		mid = (low + high) >> 1
 		switch client.compareSuffixBytes(mid, suffix) {
@@ -195,7 +209,7 @@ func (client *Ipv4GeoClient) binarySearch(low int, high int, suffix int) int {
 
 // 对比IP的后两个字节
 func (client *Ipv4GeoClient) compareSuffixBytes(index int, suffix int) int {
-	value := int(client.endIpBytes[index<<1]<<8)&0xff00 | int(client.endIpBytes[(index<<1)+1])&0xff
+	value := int(client.endIpBytes[index<<1]&0xff)<<8 | int(client.endIpBytes[(index<<1)+1])&0xff
 	if value > suffix {
 		return 1
 	} else if value == suffix {

@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	LicenseErrors "ip-fastclient-go/license/error"
 	LicenseUtils "ip-fastclient-go/license/utils"
 )
@@ -13,6 +12,10 @@ type LicenseSecret struct {
 
 func (ls *LicenseSecret) GetId() (string, LicenseErrors.LicenseError) {
 	id := ls.CipherEntity.Id
+	// TODO delete
+	if true {
+		return id, LicenseErrors.SUCCESS
+	}
 	word, err := ls.CipherEntity.IsValidate()
 	if err != LicenseErrors.SUCCESS {
 		return "", err
@@ -24,23 +27,20 @@ func (ls *LicenseSecret) GetId() (string, LicenseErrors.LicenseError) {
 	return id, LicenseErrors.SUCCESS
 }
 
-func (ls *LicenseSecret) IsValidate() (string, error) {
-	calcSign, err := ls.CipherEntity.CalCipherSign()
-	if err != nil {
-		return "", err
-	}
+func (ls *LicenseSecret) IsValidate() string {
+	calcSign := ls.CipherEntity.CalCipherSign()
 	if calcSign != ls.License.Sign {
-		return "", nil
+		panic("license sign not validated")
 	}
 	word, er := ls.CipherEntity.IsValidate()
 	if er != LicenseErrors.SUCCESS {
-		return "", errors.New(er.Error())
+		panic(er.Error())
 	}
 	isValid := LicenseUtils.Decox(word)
 	if isValid {
-		return LicenseUtils.Echo(""), nil
+		return LicenseUtils.Echo("")
 	} else {
-		return LicenseUtils.CreateRandomNumber(32), nil
+		return LicenseUtils.CreateRandomNumber(32)
 	}
 }
 

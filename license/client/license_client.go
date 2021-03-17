@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"golang.org/x/time/rate"
 	"io/ioutil"
 	LicenseConsts "ip-fastclient-go/license/consts"
@@ -53,6 +52,7 @@ func GetInstanceByLicensePath(licenseFilePath string) *LicenseClient {
 func getInstance(licenseKey string, licenseData []byte) *LicenseClient {
 	if _, ok := licenseClientMap[licenseKey]; !ok {
 		mutex.Lock()
+		defer mutex.Unlock()
 		if _, ok := licenseClientMap[licenseKey]; !ok {
 			licenseClient := LicenseClient{
 				LicenseData:     licenseData,
@@ -61,7 +61,7 @@ func getInstance(licenseKey string, licenseData []byte) *LicenseClient {
 			licenseClient.Init()
 			licenseClientMap[licenseKey] = &licenseClient
 		}
-		mutex.Unlock()
+
 	}
 	return licenseClientMap[licenseKey]
 }
@@ -103,42 +103,29 @@ func (lc *LicenseClient) Acquire() (bool, LicenseErrors.LicenseError) {
 	return true, LicenseErrors.SUCCESS
 }
 
-func (lc *LicenseClient) XTry() (string, error) {
+func (lc *LicenseClient) XTry() string {
 	rnd := LicenseUtils.CreateRandomNumber(32)
-	secret, err := lc.decryptLicense()
-	if err != nil {
-		return "", err
-	}
-	word, err := secret.IsValidate()
-	if err != nil {
-		return "", err
-	}
+	secret := lc.decryptLicense()
+	word := secret.IsValidate()
 	isValid := LicenseUtils.Decox(word)
 	if isValid {
-		return LicenseUtils.Echo(""), nil
+		return LicenseUtils.Echo("")
 	} else {
-		return rnd, nil
+		return rnd
 	}
 }
 
-func (lc *LicenseClient) GetDataType() (string, error) {
-	licenseSecret, err := lc.decryptLicense()
-	if err != nil {
-		return "", err
-	}
-	return licenseSecret.GetDataType(), nil
+func (lc *LicenseClient) GetDataType() string {
+	return lc.decryptLicense().GetDataType()
 }
 
-func (lc *LicenseClient) GetId() (string, error) {
-	licenseSecret, err := lc.decryptLicense()
-	if err != nil {
-		return "", err
-	}
+func (lc *LicenseClient) GetId() string {
+	licenseSecret := lc.decryptLicense()
 	id, lsErr := licenseSecret.GetId()
 	if lsErr != LicenseErrors.SUCCESS {
-		return "", errors.New(lsErr.Error())
+		panic(lsErr.Error())
 	}
-	return id, nil
+	return id
 }
 
 func (lc *LicenseClient) doInit() LicenseErrors.LicenseError {
@@ -162,29 +149,21 @@ func (lc *LicenseClient) doInit() LicenseErrors.LicenseError {
 }
 
 func (lc *LicenseClient) firstInit(licenseData []byte) (*LicenseDomain.LicenseSecret, LicenseErrors.LicenseError) {
-	licenseSecret, err := lc.decryptLicense()
-	error := LicenseErrors.LicenseInvalid
-	if err != nil {
-		return licenseSecret, error
-	}
-	word, err := licenseSecret.IsValidate()
-	if err != nil {
-		return licenseSecret, error
-	}
+	licenseSecret := lc.decryptLicense()
+	word := licenseSecret.IsValidate()
 	bool := LicenseUtils.Decox(word)
 	if !bool {
-		return licenseSecret, error
+		return licenseSecret, LicenseErrors.LicenseInvalid
 	}
 	return licenseSecret, LicenseErrors.SUCCESS
 }
 
-func (lc *LicenseClient) decryptLicense() (*LicenseDomain.LicenseSecret, error) {
-	emptyValue := &LicenseDomain.LicenseSecret{}
+func (lc *LicenseClient) decryptLicense() *LicenseDomain.LicenseSecret {
 
 	fileContentPlainBytes := make([]byte, len(lc.LicenseData))
 	_, err := base64.StdEncoding.Decode(fileContentPlainBytes, lc.LicenseData)
 	if err != nil {
-		return emptyValue, err
+		panic(err)
 	}
 	fileContent := string(fileContentPlainBytes)
 
@@ -197,19 +176,16 @@ func (lc *LicenseClient) decryptLicense() (*LicenseDomain.LicenseSecret, error) 
 	var license LicenseDomain.License
 	err = json.Unmarshal(decryptContent, &license)
 	if err != nil {
-		return emptyValue, err
+		panic(err)
 	}
 	cipherBytes := license.CipherBytes
 	plainPublicKey := getClearlyPbk(license.PublicKey)
-	cipherEntityDecryptBytes, err := LicenseUtils.DecryptByPublicKey(plainPublicKey, cipherBytes)
-	if err != nil {
-		return emptyValue, err
-	}
+	cipherEntityDecryptBytes := LicenseUtils.DecryptByPublicKey(plainPublicKey, cipherBytes)
 
 	var cipherEntity LicenseDomain.CipherEntity
 	err = json.Unmarshal(cipherEntityDecryptBytes, &cipherEntity)
 	if err != nil {
-		return emptyValue, err
+		panic(err)
 	}
 	ls := LicenseDomain.License{
 		Sign:        license.Sign,
@@ -219,7 +195,7 @@ func (lc *LicenseClient) decryptLicense() (*LicenseDomain.LicenseSecret, error) 
 	return &LicenseDomain.LicenseSecret{
 		License:      &ls,
 		CipherEntity: &cipherEntity,
-	}, nil
+	}
 }
 
 // 每隔30分钟检查license文件
@@ -233,18 +209,11 @@ func (lc *LicenseClient) lsnCheckerInit(licenseData []byte) {
 }
 
 func (lc *LicenseClient) lsnCheck() LicenseErrors.LicenseError {
-	secret, err := lc.decryptLicense()
-	unknown := LicenseErrors.UNKNOWN
-	if err != nil {
-		return unknown
-	}
-	word, err := secret.IsValidate()
-	if err != nil {
-		return unknown
-	}
+	secret := lc.decryptLicense()
+	word := secret.IsValidate()
 	isValid := LicenseUtils.Decox(word)
 	if !isValid {
-		return unknown
+		return LicenseErrors.UNKNOWN
 	}
 	return LicenseErrors.SUCCESS
 }

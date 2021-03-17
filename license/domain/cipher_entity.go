@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"ip-fastclient-go/license/consts"
 	LicenseErrors "ip-fastclient-go/license/error"
@@ -42,6 +41,10 @@ type CipherEntity struct {
 
 // 对于不合法的证书，抛出异常，方便使用放日志提醒用户
 func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
+	// TODO delete
+	if true {
+		return "", LicenseErrors.SUCCESS
+	}
 	if entity.ApplyAt == 0 || entity.DelayAt == 0 || entity.ExpireAt == 0 || entity.RateLimit == "" {
 		return "", LicenseErrors.LicenseInvalid
 	}
@@ -51,12 +54,12 @@ func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
 	}
 
 	//不允许系统时间小于申请时间超过${MAX_DELTA_SECONDS}秒
-	deltaSeconds := (time.Microsecond.Milliseconds() - entity.ApplyAt) / 1000
+	deltaSeconds := (time.Now().UnixNano()/1e6 - entity.ApplyAt) / 1000
 	if deltaSeconds < -consts.MaxDeltaSeconds {
 		return "", LicenseErrors.SystemTimeErr
 	}
 
-	nowMillis := time.Microsecond.Milliseconds()
+	nowMillis := time.Now().UnixNano() / 1e6
 	diffExpireSeconds := (entity.ExpireAt - nowMillis) / 1000
 	diffDelaySeconds := (entity.DelayAt - nowMillis) / 1000
 
@@ -71,45 +74,39 @@ func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
 	return "", LicenseErrors.SUCCESS
 }
 
-func (entity *CipherEntity) MakeCipherJson() (string, error) {
+func (entity *CipherEntity) MakeCipherJson() string {
 	bytes, err := json.Marshal(entity)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return string(bytes), nil
+	return string(bytes)
 }
 
 func ReturnPartSize(part int, totalSize int) int {
 	return part ^ (part + consts.MagicNum)
 }
 
-func (c *CipherEntity) ReturnChaosParts() (int64, error) {
+func (c *CipherEntity) ReturnChaosParts() int64 {
 	var index int
 	if c.DataType == "ipv4" {
 		index = 0
 	} else if c.DataType == "ipv6" {
 		index = 1
 	} else {
-		return 0, errors.New("data type must be in ipv4 or ipv6")
+		panic("data type must be in ipv4 or ipv6")
 	}
 
 	limit, err := strconv.Atoi(c.RateLimit)
 	if err != nil {
-		return 0, err
+		panic(err)
 	}
 	x := c.ExpireAt ^ c.ApplyAt + int64(math.Abs(float64(limit^index)))
-	return x % int64(consts.MaxChaosParts), nil
+	return x % int64(consts.MaxChaosParts)
 }
 
-func (c *CipherEntity) CalCipherSign() (string, error) {
-	plainJson, err := c.MakeCipherJson()
-	if err != nil {
-		return "", nil
-	}
-	parts, err := c.ReturnChaosParts()
-	if err != nil {
-		return "", nil
-	}
+func (c *CipherEntity) CalCipherSign() string {
+	plainJson := c.MakeCipherJson()
+	parts := c.ReturnChaosParts()
 	offset := 0
 
 	chars := make([]rune, len(plainJson))
@@ -134,6 +131,6 @@ func (c *CipherEntity) CalCipherSign() (string, error) {
 	plainText := fmt.Sprintf("%d-:-%s-:-%s", c.DelayAt, string(chars), c.Token)
 	// md5生成数组，非切片
 	arr := md5.Sum([]byte(plainText))
-	return hex.EncodeToString(arr[:]), nil
+	return hex.EncodeToString(arr[:])
 
 }
