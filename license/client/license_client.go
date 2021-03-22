@@ -130,7 +130,7 @@ func (lc *LicenseClient) GetId() string {
 
 func (lc *LicenseClient) doInit() LicenseErrors.LicenseError {
 	//第一次初始化
-	licenseSecret, err := lc.firstInit(lc.LicenseData)
+	licenseSecret, err := lc.firstInit()
 	if err != LicenseErrors.SUCCESS {
 		return err
 	}
@@ -148,7 +148,7 @@ func (lc *LicenseClient) doInit() LicenseErrors.LicenseError {
 	return LicenseErrors.SUCCESS
 }
 
-func (lc *LicenseClient) firstInit(licenseData []byte) (*LicenseDomain.LicenseSecret, LicenseErrors.LicenseError) {
+func (lc *LicenseClient) firstInit() (*LicenseDomain.LicenseSecret, LicenseErrors.LicenseError) {
 	licenseSecret := lc.decryptLicense()
 	word := licenseSecret.IsValidate()
 	bool := LicenseUtils.Decox(word)

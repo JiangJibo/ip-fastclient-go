@@ -1,19 +1,35 @@
 package impl
 
 import (
+	"errors"
+	"fmt"
 	"ip-fastclient-go/fast/consts"
 	"ip-fastclient-go/fast/context"
 	"ip-fastclient-go/fast/xprt"
 	"ip-fastclient-go/license/client"
+	error2 "ip-fastclient-go/license/error"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var (
 	// ipv6 a段索引区占用字节数
 	Ipv6FirstSegmentSize = 256 * 256
+
+	// 字节数组池
+	bytePool = sync.Pool{
+		New: func() interface{} {
+			cacheBytes := make([...]*[...]byte, 17)
+			for i := 0; i < len(cacheBytes); i++ {
+				bts := make([...]byte, i)
+				cacheBytes[i] = &bts
+			}
+			return &cacheBytes
+		},
+	}
 )
 
 // 保留ip段
@@ -168,7 +184,51 @@ func (client *IPv6GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 }
 
 func (client *IPv6GeoClient) Search(ip string) (string, error) {
-	panic("implement me")
+	// 被限流时阻塞
+	if client.blockedIfRateLimited {
+		client.licenseClient.Acquire()
+	} else {
+		b, err := client.licenseClient.TryAcquire()
+		// 有license异常
+		if err != error2.SUCCESS {
+			return "", errors.New(err.Error())
+		}
+		// 被限流
+		if !b {
+			return "", errors.New("rate limited")
+		}
+	}
+	// 将ip转换成字节数组
+	ipv6Address, err := toByteArray(ip)
+	if err != nil {
+		return "", err
+	}
+	// 当前字节长度在所有长度中的序号, 从0开始
+	segmentIndex := len(ipv6Address) - 1
+
+	// 当前长度下的ip没有
+	if segmentIndex < 0 || client.ipBlockStartIndex[segmentIndex] == nil {
+		return client.searchInReservedIpRanges(ipv6Address), nil
+	}
+
+	var prefixSegmentsInt int
+	if len(ipv6Address) == 1 { // 一个字节的ip
+		prefixSegmentsInt = int(ipv6Address[0] & 0xff)
+	} else {
+		prefixSegmentsInt = int(ipv6Address[0]&0xff<<8) + int(ipv6Address[1]&0xff)
+	}
+
+	start := client.ipBlockStartIndex[segmentIndex][prefixSegmentsInt]
+	end := client.ipBlockEndIndex[segmentIndex][prefixSegmentsInt]
+
+	if start < 0 {
+		return client.searchInReservedIpRanges(ipv6Address), nil
+	}
+	index := client.binarySearch(int(start), int(end), ipv6Address)
+	if index > 0 {
+		return client.contentArray[index], nil
+	}
+	return client.searchInReservedIpRanges(ipv6Address), nil
 }
 
 func toEffectiveByteArray(ipNum string) []byte {
@@ -187,4 +247,389 @@ func calculateEffectiveLength(bytes []byte) int {
 		}
 	}
 	return 0
+}
+
+func toByteArray(address string) (*[...]byte, error) {
+	pool := bytePool.Get().(*[...]*[...]byte)
+	if address == "" {
+		return pool[0], errors.New(fmt.Sprintf("Invalid length - the string %s is too short to be an IPv6 address", address))
+	}
+	// 验证长度
+	first := 0
+	last := len(address)
+	if last < 2 {
+		return pool[0], errors.New(fmt.Sprintf("Invalid length - the string %s is too short to be an IPv6 address", address))
+	}
+	length := last - first
+	if length > 39 { // 32个数字 + 7个":"
+		return pool[0], errors.New(fmt.Sprintf("Invalid length - the string %s is too long to be an IPv6 address. Length: %d", address, last))
+	}
+
+	partIndex := 0
+	partHexDigitCount := 0
+	afterDoubleSemicolonIndex := last + 2
+
+	// 获得缓存的字节数组
+	var data *[...]byte
+	var v byte
+	k := 0
+	s := 0
+	x := 1
+	left := 0
+	for i := first; i < last; i++ {
+		c := address[i]
+		if isHexDigit(c) {
+			if c == '0' && data == nil {
+				continue
+			}
+			// 定位当前段有几个数字, 且当前数字的序号：1 2 3 4 中的一个
+			if partHexDigitCount == 0 {
+				y := i + 1
+				for {
+					if y >= last || address[y] == ':' {
+						y++
+						break
+					} else {
+						x++
+					}
+					if y >= last || address[y] == ':' {
+						y++
+						break
+					} else {
+						x++
+					}
+					if y >= last || address[y] == ':' {
+						y++
+						break
+					} else {
+						x++
+					}
+				}
+				// ipv6分8段, 每一段都会写入两个字节
+				left += 2
+				// 当前数字的序号
+				partHexDigitCount = 4 - x
+			}
+			// 初始化字节数组
+			if data == nil {
+				var l int
+				if x > 2 {
+					l = 2
+				} else {
+					l = 1
+				}
+				dataLength := ((7 - partIndex) << 1) + l
+				data = bytePool.Get().(*[...]*[...]byte)[dataLength]
+			}
+			// 每段数字不能超过4个
+			partHexDigitCount++
+			if partHexDigitCount > 4 {
+				return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s parts must contain no more than 16 bits (4 hex digits)", address))
+			}
+			// 当前数字的字节值
+			if c >= 97 {
+				v = (c - 87) & 0xff
+			} else {
+				v = (c - 48) & 0xff
+			}
+			// 0:0:12:c::12:226 将'c'的前一字节填充0
+			if x == 1 && partHexDigitCount == 4 && k > 0 {
+				data[k] = 0
+				s++
+				k++
+			}
+			// 0:0:12:2c::12:226 将'2c'的前一字节填充0
+			if x == 2 && partHexDigitCount == 3 && k > 0 {
+				data[k] = 0
+				s++
+				k++
+			}
+			// 根据数字位置填充字节的前一半
+			if partHexDigitCount == 1 || partHexDigitCount == 3 {
+				data[k] = v << 4
+			}
+			// 填充字节的后一半
+			if partHexDigitCount == 2 || partHexDigitCount == 4 {
+				// 如果此段只有一个数字,或者有3个数字，当前是第一个数字
+				if x == 1 || (partHexDigitCount == 2 && x == 3) {
+					data[k] = 0
+				}
+				data[k] = data[k] | v
+				s++
+				k++
+			}
+		} else {
+			if c == ':' {
+				if data != nil {
+					// 下一次写的字节位置
+					if k != 1 {
+						k += 2 - s
+					}
+				}
+				s = 0
+				x = 1
+				partIndex++
+				partHexDigitCount = 0
+				// 如果存在连续的两个":", 即 "::"
+				if i < last-1 && address[i+1] == ':' {
+					// 在两个: 之后的下一个数字的位置
+					afterDoubleSemicolonIndex = i + 2
+					break
+				}
+				continue
+			}
+		}
+		return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
+	}
+
+	if data == nil {
+		data = bytePool.Get().(*[...]*[...]byte)[16]
+	}
+
+	// 从末尾倒叙向前遍历 直至 ::
+	lastFilledPartIndex := partIndex - 1
+	l := len(data) - 1
+	right := l
+	markRight := l
+	partIndex = 7
+
+	for i := last - 1; i >= afterDoubleSemicolonIndex; i-- {
+		c := address[i]
+
+		if isHexDigit(c) {
+			if partIndex <= lastFilledPartIndex {
+				return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s too many parts. Expected 8 parts", address))
+			}
+			partHexDigitCount++
+
+			if partHexDigitCount > 4 {
+				return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s parts must contain no more than 16 bits (4 hex digits)", address))
+			}
+			// 当前数字的字节值
+			if c >= 97 {
+				v = (c - 87) & 0xff
+			} else {
+				v = (c - 48) & 0xff
+			}
+			// 根据数字位置填充字节的后一半
+			if partHexDigitCount == 1 || partHexDigitCount == 3 {
+				right--
+				data[l] = v
+			}
+			// 填充字节的前一半
+			if partHexDigitCount == 2 || partHexDigitCount == 4 {
+				data[l] = data[l] | v<<4
+				s++
+				l--
+			}
+			if c != '0' {
+				markRight = right
+			}
+		} else {
+			if c == ':' {
+				if partHexDigitCount < 3 {
+					right--
+				}
+				l -= 2 - s
+				s = 0
+				partIndex--
+				partHexDigitCount = 0
+				continue
+			}
+			return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
+		}
+	}
+
+	// 0::X... 类型的IP
+	if left == 0 {
+		poolOffset := 16 - markRight - 1
+		if poolOffset <= 0 {
+			return pool[0], nil
+		}
+		tmp := pool[poolOffset]
+		for i := 0; i < len(tmp); i++ {
+			tmp[i] = data[markRight+i+1]
+		}
+		data = tmp
+	} else {
+		// 填充 "::" 代表的空字节, 置为0, 因为字节数组是缓存重用的, 需要复位
+		if left != right {
+			for i := left; i <= right; i++ {
+				data[i] = 0
+			}
+		}
+	}
+	return data, nil
+}
+
+func isHexDigit(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
+}
+
+func (client IPv6GeoClient) searchInReservedIpRanges(iPv6Address *[...]byte) string {
+	index := client.searchReservedIpRanges(iPv6Address)
+	if index == -1 {
+		return ""
+	} else {
+		return client.contentArray[index]
+	}
+}
+
+// 检索保留ip段
+func (client IPv6GeoClient) searchReservedIpRanges(iPv6Address *[...]byte) int {
+	if client.reservedIpRanges == nil || len(client.reservedIpRanges) == 0 {
+		return -1
+	}
+	length := len(iPv6Address)
+	for _, ipRange := range client.reservedIpRanges {
+		l1 := len(ipRange.start)
+		l2 := len(ipRange.end)
+		if l1 > length || l2 < length {
+			continue
+		}
+		if l1 < length && l2 > length {
+			return ipRange.contentIndex
+		}
+		// 长度和起始ip段相等
+		if l1 == length {
+			// 如果是0
+			if l1 == 0 {
+				return ipRange.contentIndex
+			}
+			for i := 0; i < length; i++ {
+				if ipRange.start[i]&0xff < (iPv6Address[i] & 0xff) {
+					return ipRange.contentIndex
+				}
+				// 搜索ip是保留段的起始ip
+				if i == length-1 && (ipRange.start[i]&0xff) == (iPv6Address[i]&0xff) {
+					return ipRange.contentIndex
+				}
+			}
+		}
+		// 长度和结束ip段相等
+		if l2 == length {
+			for i := 0; i < length; i++ {
+				if (ipRange.end[i] & 0xff) > (iPv6Address[i] & 0xff) {
+					return ipRange.contentIndex
+				}
+				// 搜索ip是保留段的结束ip
+				if i == length-1 && (ipRange.end[i]&0xff) == (iPv6Address[i]&0xff) {
+					return ipRange.contentIndex
+				}
+			}
+		}
+	}
+	return -1
+}
+
+/**
+ * 定位ip序号
+ *
+ * @param low  ip段的起始序号
+ * @param high ip段的结束序号
+ * @param ip   IP字节数组, 16字节
+ * @return int
+ */
+func (client IPv6GeoClient) binarySearch(low int, high int, ip *[...]byte) uint32 {
+	// 存储当前长度的ip信息的数组
+	data := client.diffLengthIpInfos[len(ip)-1]
+
+	// 如果是一字节或者二字节的ip
+	if len(ip) <= 2 {
+		return readVint(data, high*client.contentIndexByteLength, client.contentIndexByteLength)
+	}
+	// 每份ip信息的字节长度
+	perLength := ((len(ip) - 2) << 1) + client.contentIndexByteLength
+
+	result := -2
+	order := high
+
+	for low <= high {
+		mid := (low + high) << 1
+		result = compareByteArray(data, mid*perLength, ip, 2)
+		// 如果结束的ip就是当前ip
+		if result == 0 {
+			order = mid
+			break
+		} else if result > 0 {
+			order = mid
+			if mid == 0 {
+				break
+			}
+			high = mid - 1
+		} else {
+			low = mid + 1
+		}
+	}
+	offset := order * perLength
+	if result != 0 && !compareByStartIp(ip, 2, data, offset+len(ip)-2) {
+		return -1
+	}
+	return readVint(data, offset+((len(ip)-2)<<1), client.contentIndexByteLength)
+}
+
+// 读取3个字节凑成Int
+func readVint(data []byte, p int, length int) uint32 {
+	if length == 2 {
+		x := uint32(data[p]) << 8 & 0xFF00
+		p++
+		y := uint32(data[p]) & 0xFF
+		return x | y
+	} else {
+		x := uint32(data[p]) << 16 & 0xFF0000
+		p++
+		y := uint32(data[p]) << 8 & 0xFF00
+		p++
+		z := uint32(data[p]) & 0xFF
+		return x | y | z
+	}
+}
+
+/**
+ * 比较两个字节数字的大小,逐位比较
+ *
+ * @param array1 数组1
+ * @param index1 开始的比较位
+ * @param array2 数组2
+ * @param index2 开始的比较位
+ * @return int
+ */
+func compareByteArray(array1 []byte, index1 int, array2 *[...]byte, index2 int) int {
+	k := 0
+	result := 0
+	for i := index1; i < index1+len(array2); i++ {
+		if array1[i] != array2[index2+k] {
+			return int(array1[i] - array2[index2+k])
+		}
+		// end ip 和当前检索ip相同
+		k++
+		if index2+k == len(array2) {
+			return 0
+		}
+	}
+	return result
+}
+
+/**
+ * 和起始ip比较
+ *
+ * @param ip         检索ip
+ * @param index
+ * @param data       startIp后缀
+ * @param startIndex
+ * @return
+ */
+func compareByStartIp(ip *[...]byte, index int, data []byte, startIndex int) bool {
+	k := 0
+	for i := index; i < len(ip); i++ {
+		x1 := ip[i]
+		x2 := data[startIndex+k]
+		if x1 < x2 {
+			return false
+		} else if x1 > x2 {
+			return true
+		}
+		k++
+	}
+	return true
 }

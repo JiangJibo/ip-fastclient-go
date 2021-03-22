@@ -189,9 +189,9 @@ func indexOf(text string, dot uint8, fromIndex int) int {
 
 func (client *Ipv4GeoClient) binarySearch(low int, high int, suffix int) int {
 	mid := 0
-	for {
-		if low > high {
-			break
+	for low <= high {
+		if low == high {
+			return high
 		}
 		mid = (low + high) >> 1
 		switch client.compareSuffixBytes(mid, suffix) {

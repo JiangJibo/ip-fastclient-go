@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"ip-fastclient-go/license/consts"
 	LicenseErrors "ip-fastclient-go/license/error"
+	"ip-fastclient-go/license/utils"
 	"log"
 	"math"
 	"strconv"
@@ -43,7 +44,7 @@ type CipherEntity struct {
 func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
 	// TODO delete
 	if true {
-		return "", LicenseErrors.SUCCESS
+		return utils.Echo(""), LicenseErrors.SUCCESS
 	}
 	if entity.ApplyAt == 0 || entity.DelayAt == 0 || entity.ExpireAt == 0 || entity.RateLimit == "" {
 		return "", LicenseErrors.LicenseInvalid
@@ -71,7 +72,7 @@ func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
 		return "", LicenseErrors.LicenseExpire
 	}
 
-	return "", LicenseErrors.SUCCESS
+	return utils.Echo(""), LicenseErrors.SUCCESS
 }
 
 func (entity *CipherEntity) MakeCipherJson() string {

@@ -62,7 +62,7 @@ func (client *FastIPGeoClient) getIPGeoClient() IpGeoClient {
 	if dataType == "ipv4" {
 		return &ip_geo_client.Ipv4GeoClient{}
 	} else if dataType == "ipv6" {
-
+		return &ip_geo_client.IPv6GeoClient{}
 	}
 	panic("invalid dataType " + dataType)
 }
