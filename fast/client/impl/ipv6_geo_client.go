@@ -22,12 +22,11 @@ var (
 	// 字节数组池
 	bytePool = sync.Pool{
 		New: func() interface{} {
-			cacheBytes := make([...]*[...]byte, 17)
+			cacheBytes := make([][]byte, 17)
 			for i := 0; i < len(cacheBytes); i++ {
-				bts := make([...]byte, i)
-				cacheBytes[i] = &bts
+				cacheBytes[i] = make([]byte, i)
 			}
-			return &cacheBytes
+			return cacheBytes
 		},
 	}
 )
@@ -66,7 +65,7 @@ type IPv6GeoClient struct {
 	// 内容位置字节长度
 	contentIndexByteLength int
 
-	licenseClient client.LicenseClient
+	licenseClient *client.LicenseClient
 
 	blockedIfRateLimited bool
 }
@@ -74,6 +73,7 @@ type IPv6GeoClient struct {
 func (client *IPv6GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 	geoConf := ctx.GeoConf
 	client.blockedIfRateLimited = geoConf.BlockedIfRateLimited
+	client.licenseClient = ctx.LicenseClient
 
 	data := ctx.Data
 	// 唯一性的内容条数
@@ -213,9 +213,9 @@ func (client *IPv6GeoClient) Search(ip string) (string, error) {
 
 	var prefixSegmentsInt int
 	if len(ipv6Address) == 1 { // 一个字节的ip
-		prefixSegmentsInt = int(ipv6Address[0] & 0xff)
+		prefixSegmentsInt = int(ipv6Address[0])
 	} else {
-		prefixSegmentsInt = int(ipv6Address[0]&0xff<<8) + int(ipv6Address[1]&0xff)
+		prefixSegmentsInt = int(ipv6Address[0])<<8 + int(ipv6Address[1])
 	}
 
 	start := client.ipBlockStartIndex[segmentIndex][prefixSegmentsInt]
@@ -249,8 +249,8 @@ func calculateEffectiveLength(bytes []byte) int {
 	return 0
 }
 
-func toByteArray(address string) (*[...]byte, error) {
-	pool := bytePool.Get().(*[...]*[...]byte)
+func toByteArray(address string) ([]byte, error) {
+	pool := bytePool.Get().([][]byte)
 	if address == "" {
 		return pool[0], errors.New(fmt.Sprintf("Invalid length - the string %s is too short to be an IPv6 address", address))
 	}
@@ -270,7 +270,7 @@ func toByteArray(address string) (*[...]byte, error) {
 	afterDoubleSemicolonIndex := last + 2
 
 	// 获得缓存的字节数组
-	var data *[...]byte
+	var data []byte
 	var v byte
 	k := 0
 	s := 0
@@ -285,21 +285,9 @@ func toByteArray(address string) (*[...]byte, error) {
 			// 定位当前段有几个数字, 且当前数字的序号：1 2 3 4 中的一个
 			if partHexDigitCount == 0 {
 				y := i + 1
-				for {
-					if y >= last || address[y] == ':' {
-						y++
-						break
-					} else {
-						x++
-					}
-					if y >= last || address[y] == ':' {
-						y++
-						break
-					} else {
-						x++
-					}
-					if y >= last || address[y] == ':' {
-						y++
+				for i := 0; i < 4; i++ {
+					y++
+					if y-1 >= last || address[y-1] == ':' {
 						break
 					} else {
 						x++
@@ -319,7 +307,7 @@ func toByteArray(address string) (*[...]byte, error) {
 					l = 1
 				}
 				dataLength := ((7 - partIndex) << 1) + l
-				data = bytePool.Get().(*[...]*[...]byte)[dataLength]
+				data = bytePool.Get().([][]byte)[dataLength]
 			}
 			// 每段数字不能超过4个
 			partHexDigitCount++
@@ -378,12 +366,12 @@ func toByteArray(address string) (*[...]byte, error) {
 				}
 				continue
 			}
+			return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
 		}
-		return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
 	}
 
 	if data == nil {
-		data = bytePool.Get().(*[...]*[...]byte)[16]
+		data = bytePool.Get().([][]byte)[16]
 	}
 
 	// 从末尾倒叙向前遍历 直至 ::
@@ -466,7 +454,7 @@ func isHexDigit(c byte) bool {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
 }
 
-func (client IPv6GeoClient) searchInReservedIpRanges(iPv6Address *[...]byte) string {
+func (client IPv6GeoClient) searchInReservedIpRanges(iPv6Address []byte) string {
 	index := client.searchReservedIpRanges(iPv6Address)
 	if index == -1 {
 		return ""
@@ -476,7 +464,7 @@ func (client IPv6GeoClient) searchInReservedIpRanges(iPv6Address *[...]byte) str
 }
 
 // 检索保留ip段
-func (client IPv6GeoClient) searchReservedIpRanges(iPv6Address *[...]byte) int {
+func (client IPv6GeoClient) searchReservedIpRanges(iPv6Address []byte) int {
 	if client.reservedIpRanges == nil || len(client.reservedIpRanges) == 0 {
 		return -1
 	}
@@ -530,13 +518,13 @@ func (client IPv6GeoClient) searchReservedIpRanges(iPv6Address *[...]byte) int {
  * @param ip   IP字节数组, 16字节
  * @return int
  */
-func (client IPv6GeoClient) binarySearch(low int, high int, ip *[...]byte) uint32 {
+func (client IPv6GeoClient) binarySearch(low int, high int, ip []byte) int {
 	// 存储当前长度的ip信息的数组
 	data := client.diffLengthIpInfos[len(ip)-1]
 
 	// 如果是一字节或者二字节的ip
 	if len(ip) <= 2 {
-		return readVint(data, high*client.contentIndexByteLength, client.contentIndexByteLength)
+		return int(readVint(data, high*client.contentIndexByteLength, client.contentIndexByteLength))
 	}
 	// 每份ip信息的字节长度
 	perLength := ((len(ip) - 2) << 1) + client.contentIndexByteLength
@@ -545,7 +533,7 @@ func (client IPv6GeoClient) binarySearch(low int, high int, ip *[...]byte) uint3
 	order := high
 
 	for low <= high {
-		mid := (low + high) << 1
+		mid := (low + high) >> 1
 		result = compareByteArray(data, mid*perLength, ip, 2)
 		// 如果结束的ip就是当前ip
 		if result == 0 {
@@ -565,7 +553,7 @@ func (client IPv6GeoClient) binarySearch(low int, high int, ip *[...]byte) uint3
 	if result != 0 && !compareByStartIp(ip, 2, data, offset+len(ip)-2) {
 		return -1
 	}
-	return readVint(data, offset+((len(ip)-2)<<1), client.contentIndexByteLength)
+	return int(readVint(data, offset+((len(ip)-2)<<1), client.contentIndexByteLength))
 }
 
 // 读取3个字节凑成Int
@@ -594,12 +582,12 @@ func readVint(data []byte, p int, length int) uint32 {
  * @param index2 开始的比较位
  * @return int
  */
-func compareByteArray(array1 []byte, index1 int, array2 *[...]byte, index2 int) int {
+func compareByteArray(array1 []byte, index1 int, array2 []byte, index2 int) int {
 	k := 0
 	result := 0
 	for i := index1; i < index1+len(array2); i++ {
 		if array1[i] != array2[index2+k] {
-			return int(array1[i] - array2[index2+k])
+			return int(array1[i]) - int(array2[index2+k])
 		}
 		// end ip 和当前检索ip相同
 		k++
@@ -619,7 +607,7 @@ func compareByteArray(array1 []byte, index1 int, array2 *[...]byte, index2 int) 
  * @param startIndex
  * @return
  */
-func compareByStartIp(ip *[...]byte, index int, data []byte, startIndex int) bool {
+func compareByStartIp(ip []byte, index int, data []byte, startIndex int) bool {
 	k := 0
 	for i := index; i < len(ip); i++ {
 		x1 := ip[i]

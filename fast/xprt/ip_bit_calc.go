@@ -8,7 +8,7 @@ func ReadInt(data []byte, p int) uint32 {
 }
 
 func ReadVInt4(data []byte, p int) uint32 {
-	x := uint32(data[p]) << 24 & 0xFF000000
+	x := uint32(data[p]) << 24
 	p++
 	y := ReadVInt3(data, p)
 	return x | y
@@ -16,11 +16,11 @@ func ReadVInt4(data []byte, p int) uint32 {
 
 // 读取3个字节组合成int
 func ReadVInt3(data []byte, p int) uint32 {
-	x := uint32(data[p]) << 16 & 0xFF0000
+	x := uint32(data[p]) << 16
 	p++
-	y := uint32(data[p]) << 8 & 0xFF00
+	y := uint32(data[p]) << 8
 	p++
-	z := uint32(data[p]) & 0xFF
+	z := uint32(data[p])
 	return x | y | z
 }
 

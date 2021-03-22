@@ -106,7 +106,7 @@ func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 }
 
 func (client *Ipv4GeoClient) Search(ip string) (string, error) {
-	// TODO 限流， 这一步不能抽离出来，用来做代码加固
+	// 限流
 	if client.blockedIfRateLimited {
 		client.licenseClient.Acquire()
 	} else {
