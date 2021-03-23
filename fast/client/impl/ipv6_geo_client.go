@@ -12,23 +12,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 var (
 	// ipv6 a段索引区占用字节数
 	Ipv6FirstSegmentSize = 256 * 256
-
-	// 字节数组池
-	bytePool = sync.Pool{
-		New: func() interface{} {
-			cacheBytes := make([][]byte, 17)
-			for i := 0; i < len(cacheBytes); i++ {
-				cacheBytes[i] = make([]byte, i)
-			}
-			return cacheBytes
-		},
-	}
 )
 
 // 保留ip段
@@ -199,7 +187,7 @@ func (client *IPv6GeoClient) Search(ip string) (string, error) {
 		}
 	}
 	// 将ip转换成字节数组
-	ipv6Address, err := toByteArray(ip)
+	ipv6Address, err := ToByteArray(ip)
 	if err != nil {
 		return "", err
 	}
@@ -249,27 +237,25 @@ func calculateEffectiveLength(bytes []byte) int {
 	return 0
 }
 
-func toByteArray(address string) ([]byte, error) {
-	pool := bytePool.Get().([][]byte)
+func ToByteArray(address string) ([]byte, error) {
 	if address == "" {
-		return pool[0], errors.New(fmt.Sprintf("Invalid length - the string %s is too short to be an IPv6 address", address))
+		return nil, errors.New(fmt.Sprintf("Invalid length - the string %s is too short to be an IPv6 address", address))
 	}
 	// 验证长度
 	first := 0
 	last := len(address)
 	if last < 2 {
-		return pool[0], errors.New(fmt.Sprintf("Invalid length - the string %s is too short to be an IPv6 address", address))
+		return nil, errors.New(fmt.Sprintf("Invalid length - the string %s is too short to be an IPv6 address", address))
 	}
 	length := last - first
 	if length > 39 { // 32个数字 + 7个":"
-		return pool[0], errors.New(fmt.Sprintf("Invalid length - the string %s is too long to be an IPv6 address. Length: %d", address, last))
+		return nil, errors.New(fmt.Sprintf("Invalid length - the string %s is too long to be an IPv6 address. Length: %d", address, last))
 	}
 
 	partIndex := 0
 	partHexDigitCount := 0
 	afterDoubleSemicolonIndex := last + 2
 
-	// 获得缓存的字节数组
 	var data []byte
 	var v byte
 	k := 0
@@ -307,18 +293,18 @@ func toByteArray(address string) ([]byte, error) {
 					l = 1
 				}
 				dataLength := ((7 - partIndex) << 1) + l
-				data = bytePool.Get().([][]byte)[dataLength]
+				data = make([]byte, dataLength)
 			}
 			// 每段数字不能超过4个
 			partHexDigitCount++
 			if partHexDigitCount > 4 {
-				return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s parts must contain no more than 16 bits (4 hex digits)", address))
+				return nil, errors.New(fmt.Sprintf("Ipv6 address %s parts must contain no more than 16 bits (4 hex digits)", address))
 			}
 			// 当前数字的字节值
 			if c >= 97 {
-				v = (c - 87) & 0xff
+				v = c - 87
 			} else {
-				v = (c - 48) & 0xff
+				v = c - 48
 			}
 			// 0:0:12:c::12:226 将'c'的前一字节填充0
 			if x == 1 && partHexDigitCount == 4 && k > 0 {
@@ -366,12 +352,12 @@ func toByteArray(address string) ([]byte, error) {
 				}
 				continue
 			}
-			return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
+			return nil, errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
 		}
 	}
 
 	if data == nil {
-		data = bytePool.Get().([][]byte)[16]
+		data = make([]byte, 16)
 	}
 
 	// 从末尾倒叙向前遍历 直至 ::
@@ -386,18 +372,18 @@ func toByteArray(address string) ([]byte, error) {
 
 		if isHexDigit(c) {
 			if partIndex <= lastFilledPartIndex {
-				return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s too many parts. Expected 8 parts", address))
+				return nil, errors.New(fmt.Sprintf("Ipv6 address %s too many parts. Expected 8 parts", address))
 			}
 			partHexDigitCount++
 
 			if partHexDigitCount > 4 {
-				return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s parts must contain no more than 16 bits (4 hex digits)", address))
+				return nil, errors.New(fmt.Sprintf("Ipv6 address %s parts must contain no more than 16 bits (4 hex digits)", address))
 			}
 			// 当前数字的字节值
 			if c >= 97 {
-				v = (c - 87) & 0xff
+				v = c - 87
 			} else {
-				v = (c - 48) & 0xff
+				v = c - 48
 			}
 			// 根据数字位置填充字节的后一半
 			if partHexDigitCount == 1 || partHexDigitCount == 3 {
@@ -424,7 +410,7 @@ func toByteArray(address string) ([]byte, error) {
 				partHexDigitCount = 0
 				continue
 			}
-			return pool[0], errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
+			return nil, errors.New(fmt.Sprintf("Ipv6 address %s illegal character: %c at index %d", address, c, i))
 		}
 	}
 
@@ -432,9 +418,9 @@ func toByteArray(address string) ([]byte, error) {
 	if left == 0 {
 		poolOffset := 16 - markRight - 1
 		if poolOffset <= 0 {
-			return pool[0], nil
+			return nil, nil
 		}
-		tmp := pool[poolOffset]
+		tmp := make([]byte, poolOffset)
 		for i := 0; i < len(tmp); i++ {
 			tmp[i] = data[markRight+i+1]
 		}
@@ -485,11 +471,11 @@ func (client IPv6GeoClient) searchReservedIpRanges(iPv6Address []byte) int {
 				return ipRange.contentIndex
 			}
 			for i := 0; i < length; i++ {
-				if ipRange.start[i]&0xff < (iPv6Address[i] & 0xff) {
+				if ipRange.start[i] < (iPv6Address[i]) {
 					return ipRange.contentIndex
 				}
 				// 搜索ip是保留段的起始ip
-				if i == length-1 && (ipRange.start[i]&0xff) == (iPv6Address[i]&0xff) {
+				if i == length-1 && (ipRange.start[i]) == (iPv6Address[i]) {
 					return ipRange.contentIndex
 				}
 			}
@@ -497,11 +483,11 @@ func (client IPv6GeoClient) searchReservedIpRanges(iPv6Address []byte) int {
 		// 长度和结束ip段相等
 		if l2 == length {
 			for i := 0; i < length; i++ {
-				if (ipRange.end[i] & 0xff) > (iPv6Address[i] & 0xff) {
+				if (ipRange.end[i]) > (iPv6Address[i]) {
 					return ipRange.contentIndex
 				}
 				// 搜索ip是保留段的结束ip
-				if i == length-1 && (ipRange.end[i]&0xff) == (iPv6Address[i]&0xff) {
+				if i == length-1 && (ipRange.end[i]) == (iPv6Address[i]) {
 					return ipRange.contentIndex
 				}
 			}
@@ -561,14 +547,14 @@ func readVint(data []byte, p int, length int) uint32 {
 	if length == 2 {
 		x := uint32(data[p]) << 8 & 0xFF00
 		p++
-		y := uint32(data[p]) & 0xFF
+		y := uint32(data[p])
 		return x | y
 	} else {
 		x := uint32(data[p]) << 16 & 0xFF0000
 		p++
 		y := uint32(data[p]) << 8 & 0xFF00
 		p++
-		z := uint32(data[p]) & 0xFF
+		z := uint32(data[p])
 		return x | y | z
 	}
 }

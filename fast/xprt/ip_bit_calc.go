@@ -25,7 +25,7 @@ func ReadVInt3(data []byte, p int) uint32 {
 }
 
 // 将int的数据写入字节数组，3个字节
-func WriteVInt3(data []byte, offset int, i int) {
+func WriteVInt3(data []byte, offset, i int) {
 	data[offset] = uint8(i >> 16)
 	offset++
 	data[offset] = uint8(i >> 8)
@@ -33,7 +33,7 @@ func WriteVInt3(data []byte, offset int, i int) {
 	data[offset] = uint8(i)
 }
 
-func CopyOfRange(data []byte, from int, to int) []byte {
+func CopyOfRange(data []byte, from, to int) []byte {
 	ret := make([]byte, to-from)
 	for i := from; i < to; i++ {
 		ret[i-from] = data[i]
@@ -41,7 +41,7 @@ func CopyOfRange(data []byte, from int, to int) []byte {
 	return ret
 }
 
-func ArrayCopy(data []byte, from int, dest []byte, destPos int, length int) {
+func ArrayCopy(data []byte, from int, dest []byte, destPos, length int) {
 	j := 0
 	for i := from; i < from+length; i++ {
 		dest[destPos+j] = data[i]

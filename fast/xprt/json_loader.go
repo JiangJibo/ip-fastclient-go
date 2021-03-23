@@ -22,7 +22,7 @@ func Md5Hex(bytes []byte) string {
 }
 
 // 原始string数据转换成json
-func RawToJson(version string, id string, rawContent string, storedProperties []string, loadProperties map[string]bool) string {
+func RawToJson(version, id, rawContent string, storedProperties []string, loadProperties map[string]bool) string {
 	splits := strings.Split(rawContent, consts.GeoRawSep)
 	jsonObject := make(map[string]string, 10)
 	property := os.Getenv(IpSdkFilterEmptyPropertyConfKey)
@@ -52,7 +52,7 @@ func RawToJson(version string, id string, rawContent string, storedProperties []
 }
 
 //思路： 把用户的uid（20位）分成10个chunk，每个chunk 为2个char的数字 对于水印ip的位置信息，归一化经纬度为6位小数
-func makeGeo(version string, id string, jsonObject map[string]string) {
+func makeGeo(version, id string, jsonObject map[string]string) {
 	latitude, ok := jsonObject[consts.GeoY]
 	longitude, _ := jsonObject[consts.GeoX]
 
