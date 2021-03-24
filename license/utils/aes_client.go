@@ -13,7 +13,7 @@ import (
 
 // =================== ECB ======================
 // AES/ECB/PKCS5Padding 加密
-func AesEncryptECB(origData []byte, key []byte) (encrypted []byte) {
+func AesEncryptECB(origData, key []byte) (encrypted []byte) {
 	cipher, _ := aes.NewCipher(generateKey(key))
 	length := (len(origData) + aes.BlockSize) / aes.BlockSize
 	plain := make([]byte, length*aes.BlockSize)
@@ -60,7 +60,7 @@ func generateKey(key []byte) (genKey []byte) {
 }
 
 // =================== CBC ======================
-func AesEncryptCBC(origData []byte, key []byte) (encrypted []byte) {
+func AesEncryptCBC(origData, key []byte) (encrypted []byte) {
 	// 分组秘钥
 	// NewCipher该函数限制了输入k的长度必须为16, 24或者32
 	block, _ := aes.NewCipher(key)
@@ -71,7 +71,7 @@ func AesEncryptCBC(origData []byte, key []byte) (encrypted []byte) {
 	blockMode.CryptBlocks(encrypted, origData)                  // 加密
 	return encrypted
 }
-func AesDecryptCBC(encrypted []byte, key []byte) (decrypted []byte) {
+func AesDecryptCBC(encrypted, key []byte) (decrypted []byte) {
 	block, _ := aes.NewCipher(key)                              // 分组秘钥
 	blockSize := block.BlockSize()                              // 获取秘钥块的长度
 	blockMode := cipher.NewCBCDecrypter(block, key[:blockSize]) // 加密模式

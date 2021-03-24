@@ -199,7 +199,7 @@ func (lc *LicenseClient) decryptLicense() *LicenseDomain.LicenseSecret {
 }
 
 // 每隔30分钟检查license文件
-func (lc *LicenseClient) lsnCheckerInit(licenseData []byte) {
+func (lc *LicenseClient) lsnCheckerInit() {
 	for range time.Tick(time.Minute * 30) {
 		err := lc.lsnCheck()
 		if err != LicenseErrors.SUCCESS {

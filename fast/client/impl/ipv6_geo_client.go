@@ -504,7 +504,7 @@ func (client IPv6GeoClient) searchReservedIpRanges(iPv6Address []byte) int {
  * @param ip   IP字节数组, 16字节
  * @return int
  */
-func (client IPv6GeoClient) binarySearch(low int, high int, ip []byte) int {
+func (client IPv6GeoClient) binarySearch(low, high int, ip []byte) int {
 	// 存储当前长度的ip信息的数组
 	data := client.diffLengthIpInfos[len(ip)-1]
 
@@ -543,7 +543,7 @@ func (client IPv6GeoClient) binarySearch(low int, high int, ip []byte) int {
 }
 
 // 读取3个字节凑成Int
-func readVint(data []byte, p int, length int) uint32 {
+func readVint(data []byte, p, length int) uint32 {
 	if length == 2 {
 		x := uint32(data[p]) << 8 & 0xFF00
 		p++

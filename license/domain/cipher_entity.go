@@ -87,27 +87,27 @@ func ReturnPartSize(part int, totalSize int) int {
 	return part ^ (part + consts.MagicNum)
 }
 
-func (c *CipherEntity) ReturnChaosParts() int64 {
+func (entity *CipherEntity) ReturnChaosParts() int64 {
 	var index int
-	if c.DataType == "ipv4" {
+	if entity.DataType == "ipv4" {
 		index = 0
-	} else if c.DataType == "ipv6" {
+	} else if entity.DataType == "ipv6" {
 		index = 1
 	} else {
 		panic("data type must be in ipv4 or ipv6")
 	}
 
-	limit, err := strconv.Atoi(c.RateLimit)
+	limit, err := strconv.Atoi(entity.RateLimit)
 	if err != nil {
 		panic(err)
 	}
-	x := c.ExpireAt ^ c.ApplyAt + int64(math.Abs(float64(limit^index)))
+	x := entity.ExpireAt ^ entity.ApplyAt + int64(math.Abs(float64(limit^index)))
 	return x % int64(consts.MaxChaosParts)
 }
 
-func (c *CipherEntity) CalCipherSign() string {
-	plainJson := c.MakeCipherJson()
-	parts := c.ReturnChaosParts()
+func (entity *CipherEntity) CalCipherSign() string {
+	plainJson := entity.MakeCipherJson()
+	parts := entity.ReturnChaosParts()
 	offset := 0
 
 	chars := make([]rune, len(plainJson))
@@ -129,7 +129,7 @@ func (c *CipherEntity) CalCipherSign() string {
 			continue
 		}
 	}
-	plainText := fmt.Sprintf("%d-:-%s-:-%s", c.DelayAt, string(chars), c.Token)
+	plainText := fmt.Sprintf("%d-:-%s-:-%s", entity.DelayAt, string(chars), entity.Token)
 	// md5生成数组，非切片
 	arr := md5.Sum([]byte(plainText))
 	return hex.EncodeToString(arr[:])
