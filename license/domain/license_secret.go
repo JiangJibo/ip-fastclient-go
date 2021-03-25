@@ -1,8 +1,8 @@
 package domain
 
 import (
-	LicenseErrors "ip-fastclient-go/license/error"
-	LicenseUtils "ip-fastclient-go/license/utils"
+	LicenseErrors "github.com/jiangjibo/ip-fastclient-go/license/error"
+	LicenseUtils "github.com/jiangjibo/ip-fastclient-go/license/utils"
 )
 
 type LicenseSecret struct {

@@ -3,11 +3,11 @@ package impl
 import (
 	"errors"
 	"fmt"
-	"ip-fastclient-go/fast/consts"
-	"ip-fastclient-go/fast/context"
-	"ip-fastclient-go/fast/xprt"
-	"ip-fastclient-go/license/client"
-	error2 "ip-fastclient-go/license/error"
+	"github.com/jiangjibo/ip-fastclient-go/fast/consts"
+	"github.com/jiangjibo/ip-fastclient-go/fast/context"
+	"github.com/jiangjibo/ip-fastclient-go/fast/xprt"
+	"github.com/jiangjibo/ip-fastclient-go/license/client"
+	lsError "github.com/jiangjibo/ip-fastclient-go/license/error"
 	"math/big"
 	"sort"
 	"strconv"
@@ -174,11 +174,14 @@ func (client *IPv6GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 func (client *IPv6GeoClient) Search(ip string) (string, error) {
 	// 被限流时阻塞
 	if client.blockedIfRateLimited {
-		client.licenseClient.Acquire()
+		_, err := client.licenseClient.Acquire()
+		if err != lsError.SUCCESS {
+			return "", errors.New(err.Error())
+		}
 	} else {
 		b, err := client.licenseClient.TryAcquire()
 		// 有license异常
-		if err != error2.SUCCESS {
+		if err != lsError.SUCCESS {
 			return "", errors.New(err.Error())
 		}
 		// 被限流

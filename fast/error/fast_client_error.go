@@ -1,6 +1,6 @@
 package error
 
-import LicenseErrors "ip-fastclient-go/license/error"
+import LicenseErrors "github.com/jiangjibo/ip-fastclient-go/license/error"
 
 type FastClientError struct {
 	LicenseErrors.IpGeoErrorInterface

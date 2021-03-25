@@ -1,7 +1,7 @@
 package client
 
 import (
-	"ip-fastclient-go/fast/domain"
+	"github.com/jiangjibo/ip-fastclient-go/fast/domain"
 	"testing"
 )
 

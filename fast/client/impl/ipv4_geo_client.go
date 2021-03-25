@@ -2,11 +2,11 @@ package impl
 
 import (
 	"errors"
-	"ip-fastclient-go/fast/consts"
-	"ip-fastclient-go/fast/context"
-	"ip-fastclient-go/fast/xprt"
-	lsnClient "ip-fastclient-go/license/client"
-	error2 "ip-fastclient-go/license/error"
+	"github.com/jiangjibo/ip-fastclient-go/fast/consts"
+	"github.com/jiangjibo/ip-fastclient-go/fast/context"
+	"github.com/jiangjibo/ip-fastclient-go/fast/xprt"
+	lsnClient "github.com/jiangjibo/ip-fastclient-go/license/client"
+	lsError "github.com/jiangjibo/ip-fastclient-go/license/error"
 	"strings"
 )
 
@@ -108,10 +108,13 @@ func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 func (client *Ipv4GeoClient) Search(ip string) (string, error) {
 	// 限流
 	if client.blockedIfRateLimited {
-		client.licenseClient.Acquire()
+		_, err := client.licenseClient.Acquire()
+		if err != lsError.SUCCESS {
+			return "", errors.New(err.Error())
+		}
 	} else {
 		b, err := client.licenseClient.TryAcquire()
-		if err != error2.SUCCESS {
+		if err != lsError.SUCCESS {
 			return "", errors.New(err.Error())
 		}
 		if !b {

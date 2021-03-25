@@ -1,7 +1,7 @@
 package xprt
 
 import (
-	"ip-fastclient-go/fast/consts"
+	"github.com/jiangjibo/ip-fastclient-go/fast/consts"
 	"testing"
 )
 

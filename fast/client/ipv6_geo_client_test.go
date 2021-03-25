@@ -1,8 +1,8 @@
 package client
 
 import (
-	"ip-fastclient-go/fast/client/impl"
-	"ip-fastclient-go/fast/domain"
+	"github.com/jiangjibo/ip-fastclient-go/fast/client/impl"
+	"github.com/jiangjibo/ip-fastclient-go/fast/domain"
 	"testing"
 	"time"
 )
@@ -44,7 +44,7 @@ func TestMultiSearchIpv6(t *testing.T) {
 	t.Logf("检索%dW次耗时:%d毫秒", num/10000, endTime-startTime)
 }
 
-// go test -v ip-fastclient-go/fast/client -test.benchmem  -test.bench SearchIpv6InBench -test.run SearchIpv6InBench -benchtime 1s -memprofile ipv6_mem_profile.out
+// go test -v github.com/jiangjibo/ip-fastclient-go/fast/client -test.benchmem  -test.bench SearchIpv6InBench -test.run SearchIpv6InBench -benchtime 1s -memprofile ipv6_mem_profile.out
 func BenchmarkSearchIpv6InBench(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
