@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	LicenseConsts "github.com/jiangjibo/ip-fastclient-go/license/consts"
+	LicenseConsts "github.com/JiangJibo/ip-fastclient-go/license/consts"
 	"math/big"
 	"strconv"
 	"strings"

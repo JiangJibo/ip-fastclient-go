@@ -4,7 +4,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
-	gorsa "github.com/jiangjibo/ip-fastclient-go/license/gorsa"
+	gorsa "github.com/JiangJibo/ip-fastclient-go/license/gorsa"
 )
 
 // 使用公钥解密

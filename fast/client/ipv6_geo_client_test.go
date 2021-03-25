@@ -1,16 +1,16 @@
 package client
 
 import (
-	"github.com/jiangjibo/ip-fastclient-go/fast/client/impl"
-	"github.com/jiangjibo/ip-fastclient-go/fast/domain"
+	"github.com/JiangJibo/ip-fastclient-go/fast/client/impl"
+	"github.com/JiangJibo/ip-fastclient-go/fast/domain"
 	"testing"
 	"time"
 )
 
 var (
 	ipv6GeoConf = domain.FastGeoConf{
-		LicenseFilePath:      "/Users/jiangjibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/license-ipv6.lic",
-		DataFilePath:         "/Users/jiangjibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/ipv6-inner-common-geo.dex",
+		LicenseFilePath:      "/Users/JiangJibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/license-ipv6.lic",
+		DataFilePath:         "/Users/JiangJibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/ipv6-inner-common-geo.dex",
 		BlockedIfRateLimited: true,
 	}
 	//ipv6FastIpClient = GetSingleton(&ipv6GeoConf)
@@ -44,7 +44,7 @@ func TestMultiSearchIpv6(t *testing.T) {
 	t.Logf("检索%dW次耗时:%d毫秒", num/10000, endTime-startTime)
 }
 
-// go test -v github.com/jiangjibo/ip-fastclient-go/fast/client -test.benchmem  -test.bench SearchIpv6InBench -test.run SearchIpv6InBench -benchtime 1s -memprofile ipv6_mem_profile.out
+// go test -v github.com/JiangJibo/ip-fastclient-go/fast/client -test.benchmem  -test.bench SearchIpv6InBench -test.run SearchIpv6InBench -benchtime 1s -memprofile ipv6_mem_profile.out
 func BenchmarkSearchIpv6InBench(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

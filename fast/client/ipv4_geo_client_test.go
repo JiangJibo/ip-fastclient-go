@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/jiangjibo/ip-fastclient-go/fast/domain"
+	"github.com/JiangJibo/ip-fastclient-go/fast/domain"
 	"runtime"
 	"testing"
 	"time"
@@ -9,8 +9,8 @@ import (
 
 var (
 	ipv4GeoConf = domain.FastGeoConf{
-		LicenseFilePath:      "/Users/jiangjibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/license-ipv4.lic",
-		DataFilePath:         "/Users/jiangjibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/ipv4-inner-common-geo.dex",
+		LicenseFilePath:      "/Users/JiangJibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/license-ipv4.lic",
+		DataFilePath:         "/Users/JiangJibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/ipv4-inner-common-geo.dex",
 		BlockedIfRateLimited: true,
 	}
 	ipv4FastIpClient *FastIPGeoClient

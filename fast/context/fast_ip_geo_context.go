@@ -1,8 +1,8 @@
 package context
 
 import (
-	"github.com/jiangjibo/ip-fastclient-go/fast/domain"
-	lsnClient "github.com/jiangjibo/ip-fastclient-go/license/client"
+	"github.com/JiangJibo/ip-fastclient-go/fast/domain"
+	lsnClient "github.com/JiangJibo/ip-fastclient-go/license/client"
 )
 
 type FastIPGeoContext struct {

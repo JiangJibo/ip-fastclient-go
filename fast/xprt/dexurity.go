@@ -2,7 +2,7 @@ package xprt
 
 import (
 	"crypto/rc4"
-	"github.com/jiangjibo/ip-fastclient-go/fast/consts"
+	"github.com/JiangJibo/ip-fastclient-go/fast/consts"
 )
 
 // rc4解密

@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"github.com/jiangjibo/ip-fastclient-go/fast/xprt"
+	"github.com/JiangJibo/ip-fastclient-go/fast/xprt"
 	"io"
 	"io/ioutil"
 	"os"

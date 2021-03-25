@@ -3,13 +3,13 @@ package client
 import (
 	"encoding/json"
 	"errors"
-	"github.com/jiangjibo/ip-fastclient-go/fast/context"
-	"github.com/jiangjibo/ip-fastclient-go/fast/domain"
-	fasterror "github.com/jiangjibo/ip-fastclient-go/fast/error"
-	"github.com/jiangjibo/ip-fastclient-go/fast/xprt"
-	"github.com/jiangjibo/ip-fastclient-go/license/client"
-	error2 "github.com/jiangjibo/ip-fastclient-go/license/error"
-	"github.com/jiangjibo/ip-fastclient-go/license/utils"
+	"github.com/JiangJibo/ip-fastclient-go/fast/context"
+	"github.com/JiangJibo/ip-fastclient-go/fast/domain"
+	fasterror "github.com/JiangJibo/ip-fastclient-go/fast/error"
+	"github.com/JiangJibo/ip-fastclient-go/fast/xprt"
+	"github.com/JiangJibo/ip-fastclient-go/license/client"
+	error2 "github.com/JiangJibo/ip-fastclient-go/license/error"
+	"github.com/JiangJibo/ip-fastclient-go/license/utils"
 )
 
 // 初始化

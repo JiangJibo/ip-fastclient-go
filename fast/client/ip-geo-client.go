@@ -1,6 +1,6 @@
 package client
 
-import FastClientContext "github.com/jiangjibo/ip-fastclient-go/fast/context"
+import FastClientContext "github.com/JiangJibo/ip-fastclient-go/fast/context"
 
 type IpGeoClient interface {
 

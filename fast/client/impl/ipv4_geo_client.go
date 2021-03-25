@@ -2,11 +2,11 @@ package impl
 
 import (
 	"errors"
-	"github.com/jiangjibo/ip-fastclient-go/fast/consts"
-	"github.com/jiangjibo/ip-fastclient-go/fast/context"
-	"github.com/jiangjibo/ip-fastclient-go/fast/xprt"
-	lsnClient "github.com/jiangjibo/ip-fastclient-go/license/client"
-	lsError "github.com/jiangjibo/ip-fastclient-go/license/error"
+	"github.com/JiangJibo/ip-fastclient-go/fast/consts"
+	"github.com/JiangJibo/ip-fastclient-go/fast/context"
+	"github.com/JiangJibo/ip-fastclient-go/fast/xprt"
+	lsnClient "github.com/JiangJibo/ip-fastclient-go/license/client"
+	lsError "github.com/JiangJibo/ip-fastclient-go/license/error"
 	"strings"
 )
 

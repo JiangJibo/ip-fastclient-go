@@ -1,10 +1,10 @@
 package client
 
 import (
-	ip_geo_client "github.com/jiangjibo/ip-fastclient-go/fast/client/impl"
-	"github.com/jiangjibo/ip-fastclient-go/fast/context"
-	"github.com/jiangjibo/ip-fastclient-go/fast/domain"
-	"github.com/jiangjibo/ip-fastclient-go/fast/xprt"
+	ip_geo_client "github.com/JiangJibo/ip-fastclient-go/fast/client/impl"
+	"github.com/JiangJibo/ip-fastclient-go/fast/context"
+	"github.com/JiangJibo/ip-fastclient-go/fast/domain"
+	"github.com/JiangJibo/ip-fastclient-go/fast/xprt"
 	"sync"
 	"time"
 )

@@ -1,4 +1,4 @@
-module github.com/jiangjibo/ip-fastclient-go
+module github.com/JiangJibo/ip-fastclient-go
 
 go 1.15
 

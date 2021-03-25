@@ -4,7 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/jiangjibo/ip-fastclient-go/fast/consts"
+	"github.com/JiangJibo/ip-fastclient-go/fast/consts"
 	"os"
 	"strconv"
 	"strings"
