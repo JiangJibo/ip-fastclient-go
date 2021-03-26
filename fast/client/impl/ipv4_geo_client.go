@@ -172,7 +172,7 @@ func calculateIpInteger(ip string, result int, dot int) int {
 			num = calculateIpSegmentInt(ip, strings.LastIndex(ip, ".")+1, len(ip)-1)
 		}
 		result <<= 8
-		result |= num & 0xff
+		result |= num
 		dot = dotIndex + 2
 		if dotIndex < 0 {
 			return result
@@ -212,7 +212,7 @@ func (client *Ipv4GeoClient) binarySearch(low int, high int, suffix int) int {
 
 // 对比IP的后两个字节
 func (client *Ipv4GeoClient) compareSuffixBytes(index int, suffix int) int {
-	value := int(client.endIpBytes[index<<1]&0xff)<<8 | int(client.endIpBytes[(index<<1)+1])&0xff
+	value := int(client.endIpBytes[index<<1])<<8 | int(client.endIpBytes[(index<<1)+1])
 	if value > suffix {
 		return 1
 	} else if value == suffix {

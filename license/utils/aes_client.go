@@ -134,7 +134,7 @@ func decodeHex(data string) ([]byte, error) {
 		j++
 		f |= toDigit(string(data[j]), j)
 		j++
-		out[i] = uint8(f) & 0xff
+		out[i] = uint8(f)
 	}
 	return out, nil
 }

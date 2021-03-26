@@ -548,14 +548,14 @@ func (client IPv6GeoClient) binarySearch(low, high int, ip []byte) int {
 // 读取3个字节凑成Int
 func readVint(data []byte, p, length int) uint32 {
 	if length == 2 {
-		x := uint32(data[p]) << 8 & 0xFF00
+		x := uint32(data[p]) << 8
 		p++
 		y := uint32(data[p])
 		return x | y
 	} else {
-		x := uint32(data[p]) << 16 & 0xFF0000
+		x := uint32(data[p]) << 16
 		p++
-		y := uint32(data[p]) << 8 & 0xFF00
+		y := uint32(data[p]) << 8
 		p++
 		z := uint32(data[p])
 		return x | y | z

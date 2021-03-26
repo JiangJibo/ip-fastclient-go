@@ -1,7 +1,6 @@
 package client
 
 import (
-	"github.com/JiangJibo/ip-fastclient-go/fast/client/impl"
 	"github.com/JiangJibo/ip-fastclient-go/fast/domain"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ var (
 		DataFilePath:         "/Users/JiangJibo/applications/ip-explorer/ip-geo-fastclient/src/test/resources/ipv6-inner-common-geo.dex",
 		BlockedIfRateLimited: true,
 	}
-	//ipv6FastIpClient = GetSingleton(&ipv6GeoConf)
+	ipv6FastIpClient = GetSingleton(&ipv6GeoConf)
 )
 
 func TestSearchIpv6(t *testing.T) {
@@ -23,12 +22,12 @@ func TestSearchIpv6(t *testing.T) {
 	properties["country"] = true
 	properties["isp"] = true
 
-	//ret, err := ipv6FastIpClient.Search("::4fc5:0000:0000:0000:0000:0001")
-	//if err != nil {
-	//	t.Log(err)
-	//	return
-	//}
-	//t.Logf(ret)
+	ret, err := ipv6FastIpClient.Search("240e:00e0:4fc5:0000:0000:0000:0000:0001")
+	if err != nil {
+		t.Log(err)
+		return
+	}
+	t.Logf(ret)
 }
 
 func TestMultiSearchIpv6(t *testing.T) {
@@ -48,7 +47,7 @@ func TestMultiSearchIpv6(t *testing.T) {
 func BenchmarkSearchIpv6InBench(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		impl.ToByteArray("240e:00e0:4fc5:0000:0000:0000:0000:0001")
-		//ipv6FastIpClient.Search("240e:00e0:4fc5:0000:0000:0000:0000:0001")
+		//impl.ToByteArray("240e:00e0:4fc5:0000:0000:0000:0000:0001")
+		ipv6FastIpClient.Search("240e:00e0:4fc5:0000:0000:0000:0000:0001")
 	}
 }
