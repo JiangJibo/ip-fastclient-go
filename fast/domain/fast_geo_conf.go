@@ -48,16 +48,16 @@ func (fastGeoConf *FastGeoConf) GetLicenseData() []byte {
 }
 
 // 初始化许可数据
-func (fastGeoConf *FastGeoConf) initLicense() error {
+func (fastGeoConf *FastGeoConf) initLicense() {
 	if fastGeoConf.LicenseInput == nil {
-		return nil
+		return
 	}
 	licenseBytes := ReadInput(fastGeoConf.LicenseInput)
 	if licenseBytes != nil || len(licenseBytes) > 0 {
 		fastGeoConf.LicenseBytes = licenseBytes
 		fastGeoConf.LicenseInput = nil
 	}
-	return nil
+	return
 }
 
 // 获取数据
@@ -74,16 +74,15 @@ func (fastGeoConf *FastGeoConf) GetDexData() []byte {
 }
 
 // 初始化数据
-func (fastGeoConf *FastGeoConf) initDex() error {
+func (fastGeoConf *FastGeoConf) initDex() {
 	if fastGeoConf.DataInput == nil {
-		return nil
+		return
 	}
 	dataBytes := ReadInput(fastGeoConf.DataInput)
 	if dataBytes != nil || len(dataBytes) > 0 {
 		fastGeoConf.DataBytes = dataBytes
 		fastGeoConf.DataInput = nil
 	}
-	return nil
 }
 
 func (fastGeoConf *FastGeoConf) CalculateLicenseKey() string {
