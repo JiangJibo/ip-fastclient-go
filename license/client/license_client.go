@@ -145,6 +145,7 @@ func (lc *LicenseClient) doInit() LicenseErrors.LicenseError {
 		// 每秒产生rl个令牌， 最多存储rl个令牌
 		lc.rateLimiter = rate.NewLimiter(rate.Limit(rl), rl)
 	}
+	lc.lsnCheckerInit()
 	return LicenseErrors.SUCCESS
 }
 
