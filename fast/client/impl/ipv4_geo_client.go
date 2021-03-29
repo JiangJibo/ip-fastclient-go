@@ -46,7 +46,7 @@ func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 
 	endIpBytes := make([]byte, recordSize<<1)
 	client.endIpBytes = endIpBytes
-	contentIndexes := make([]byte, recordSize<<3)
+	contentIndexes := make([]byte, recordSize*3)
 	client.contentIndexes = contentIndexes
 	// 有多少条唯一性的内容
 	contentArray := make([]string, xprt.ReadInt(data, consts.MetaInfoByteLength+4))
@@ -96,6 +96,8 @@ func (client *Ipv4GeoClient) Load(ctx *context.FastIPGeoContext) bool {
 			contentIndexMappings[content] = index
 			contentIndex[i] = index
 			index++
+		} else {
+			contentIndex[i] = contentIndexMappings[content]
 		}
 	}
 	// 将内容位置的int数组转换成字节数组,节省一个字节
