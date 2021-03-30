@@ -101,7 +101,7 @@ func (entity *CipherEntity) ReturnChaosParts() int64 {
 	if err != nil {
 		panic(err)
 	}
-	x := entity.ExpireAt ^ entity.ApplyAt + int64(math.Abs(float64(limit^index)))
+	x := entity.ExpireAt ^ (entity.ApplyAt + int64(math.Abs(float64(limit^index))))
 	return x % int64(consts.MaxChaosParts)
 }
 

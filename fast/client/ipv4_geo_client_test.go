@@ -16,16 +16,11 @@ var (
 	ipv4FastIpClient *FastIPGeoClient
 )
 
-//func init() {
-//	ipv4FastIpClient = GetSingleton(&ipv4GeoConf)
-//}
+func init() {
+	ipv4FastIpClient = GetSingleton(&ipv4GeoConf)
+}
 
 func TestSearchIpv4(t *testing.T) {
-
-	properties := make(map[string]bool, 16)
-	properties["country_code"] = true
-	properties["country"] = true
-	properties["isp"] = true
 
 	ret, err := ipv4FastIpClient.Search("47.116.2.4")
 	if err != nil {

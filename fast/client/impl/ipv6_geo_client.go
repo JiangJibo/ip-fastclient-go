@@ -261,10 +261,8 @@ func ToByteArray(address string) ([]byte, error) {
 
 	var data []byte
 	var v byte
-	k := 0
-	s := 0
+	k, s, left := 0, 0, 0
 	x := 1
-	left := 0
 	for i := first; i < last; i++ {
 		c := address[i]
 		if isHexDigit(c) {
@@ -366,8 +364,7 @@ func ToByteArray(address string) ([]byte, error) {
 	// 从末尾倒叙向前遍历 直至 ::
 	lastFilledPartIndex := partIndex - 1
 	l := len(data) - 1
-	right := l
-	markRight := l
+	right, markRight := l, l
 	partIndex = 7
 
 	for i := last - 1; i >= afterDoubleSemicolonIndex; i-- {
