@@ -12,10 +12,6 @@ type LicenseSecret struct {
 
 func (ls *LicenseSecret) GetId() (string, LicenseErrors.LicenseError) {
 	id := ls.CipherEntity.Id
-	// TODO delete
-	if true {
-		return id, LicenseErrors.SUCCESS
-	}
 	word, err := ls.CipherEntity.IsValidate()
 	if err != LicenseErrors.SUCCESS {
 		return "", err

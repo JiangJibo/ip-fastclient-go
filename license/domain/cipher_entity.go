@@ -42,10 +42,6 @@ type CipherEntity struct {
 
 // 对于不合法的证书，抛出异常，方便使用放日志提醒用户
 func (entity *CipherEntity) IsValidate() (string, LicenseErrors.LicenseError) {
-	// TODO delete
-	if true {
-		return utils.Echo(""), LicenseErrors.SUCCESS
-	}
 	if entity.ApplyAt == 0 || entity.DelayAt == 0 || entity.ExpireAt == 0 || entity.RateLimit == "" {
 		return "", LicenseErrors.LicenseInvalid
 	}
