@@ -88,7 +88,7 @@ func ReturnPartSize(part int, totalSize int) int {
 }
 
 func (entity *CipherEntity) ReturnChaosParts() int64 {
-	var index int
+	var index int64
 	if entity.DataType == "ipv4" {
 		index = 0
 	} else if entity.DataType == "ipv6" {
@@ -101,7 +101,7 @@ func (entity *CipherEntity) ReturnChaosParts() int64 {
 	if err != nil {
 		panic(err)
 	}
-	x := entity.ExpireAt ^ (entity.ApplyAt + int64(math.Abs(float64(limit^index))))
+	x := entity.ExpireAt ^ (entity.ApplyAt + int64(math.Abs(float64(limit))) ^ index)
 	return x % int64(consts.MaxChaosParts)
 }
 
